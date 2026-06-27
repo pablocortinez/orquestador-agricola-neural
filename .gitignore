@@ -1,0 +1,16 @@
+# Environments
+.env
+venv/
+env/
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+
+# n8n local data
+.n8n/
