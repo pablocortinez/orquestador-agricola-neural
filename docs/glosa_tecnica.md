@@ -1,6 +1,20 @@
 # Glosa Técnica de Hiperparámetros y Conceptos — Orquestador Agrícola Neural
 
-> Auditoría exhaustiva de todos los hiperparámetros y conceptos de Deep Learning rastreados a lo largo de los archivos [entrenar_cnn.py](file:///home/pablocortinez/Documentos/PROYECTOS/TAREA3/src/entrenar_cnn.py) y [api_vision.py](file:///home/pablocortinez/Documentos/PROYECTOS/TAREA3/src/api_vision.py).
+> Auditoría exhaustiva de todos los hiperparámetros y conceptos de Deep Learning rastreados a lo largo de los archivos `src/entrenar_cnn.py` y `src/api_vision.py`.
+
+---
+
+## Índice
+
+1. [Hiperparámetros de Entrenamiento](#1-hiperparámetros-de-entrenamiento)
+2. [Hiperparámetros de Arquitectura](#2-hiperparámetros-de-arquitectura-topografía-de-la-red)
+3. [Conceptos Clave de Deep Learning](#3-conceptos-clave-de-deep-learning)
+4. [Diagrama Visual: Flujo de Tensores](#4-diagrama-visual-flujo-de-tensores)
+5. [¿Por qué esto y no otra cosa? (Contexto del proyecto)](#5-por-qué-esto-y-no-otra-cosa-contexto-del-proyecto)
+6. [Parámetros Totales de la Red](#6-parámetros-totales-de-la-red)
+7. [Trazabilidad Inter-Archivo](#7-trazabilidad-inter-archivo)
+8. [Áreas de Mejora Identificadas](#8-áreas-de-mejora-identificadas)
+9. [Preguntas de Auto-Evaluación](#9-preguntas-de-auto-evaluación)
 
 ---
 
@@ -99,7 +113,142 @@
 
 ---
 
-## 4. Parámetros Totales de la Red
+## 4. Diagrama Visual: Flujo de Tensores
+
+Esta sección muestra cómo cambia la forma (shape) del tensor en cada operación. Leer de arriba a abajo.
+
+### 4.1 Entrenamiento (entrenar_cnn.py)
+
+```
+IMAGEN EN DISCO (JPG/PNG)
+         │
+         ▼ transforms.Resize((64, 64))
+PIL Image [H×W×3]  ← tamaño variable de la foto original
+         │
+         ▼ transforms.ToTensor()
+Tensor  [3, 64, 64]  float32, rango [0.0, 1.0]
+         │  C=3 canales RGB, H=64, W=64
+         │
+         ▼ transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))
+Tensor  [3, 64, 64]  float32, rango [-1.0, 1.0]
+         │
+         ▼ DataLoader agrupa 32 imágenes → mini-batch
+Tensor  [32, 3, 64, 64]   ← B=32 (batch), C=3, H=64, W=64
+         │
+         ╔══════════════════════ AgricolaCNN.forward() ══════════════════════╗
+         │                                                                    ║
+         ▼ conv1 (3→16 filtros, kernel 3×3, padding 1)                      ║
+Tensor  [32, 16, 64, 64]  ← 16 feature maps, mismo tamaño espacial         ║
+         │                                                                    ║
+         ▼ relu1: f(x) = max(0, x)  [sin cambio de shape]                   ║
+Tensor  [32, 16, 64, 64]                                                     ║
+         │                                                                    ║
+         ▼ pool1: MaxPool2d(2×2)  → divide H y W a la mitad                 ║
+Tensor  [32, 16, 32, 32]  ← ¡la imagen se "encogió" espacialmente!         ║
+         │                                                                    ║
+         ▼ conv2 (16→32 filtros, kernel 3×3, padding 1)                     ║
+Tensor  [32, 32, 32, 32]  ← más filtros, mismo tamaño espacial             ║
+         │                                                                    ║
+         ▼ relu2                                                              ║
+Tensor  [32, 32, 32, 32]                                                     ║
+         │                                                                    ║
+         ▼ pool2: MaxPool2d(2×2)                                             ║
+Tensor  [32, 32, 16, 16]  ← volvió a encoger espacialmente                 ║
+         │                                                                    ║
+         ▼ x.view(x.size(0), -1)  ← FLATTEN: 32×16×16 = 8192               ║
+Tensor  [32, 8192]  ← ya no es una cuadrícula 2D, es un vector             ║
+         │                                                                    ║
+         ▼ fc1: Linear(8192 → 64)                                           ║
+Tensor  [32, 64]   ← representación compacta                                ║
+         │                                                                    ║
+         ▼ relu3                                                              ║
+Tensor  [32, 64]                                                             ║
+         │                                                                    ║
+         ▼ fc2: Linear(64 → 3)                                              ║
+Tensor  [32, 3]    ← 3 logits crudos por imagen (un score por clase)       ║
+         ║                                                                    ║
+         ╚════════════════════════════════════════════════════════════════════╝
+         │
+         ▼ CrossEntropyLoss(outputs, labels)
+Tensor  []  ← escalar: valor de pérdida (loss) del batch
+         │
+         ▼ loss.backward() → calcula ∂L/∂w para cada parámetro
+         ▼ optimizer.step() → actualiza los 529,635 pesos
+```
+
+### 4.2 Inferencia (api_vision.py) — una sola imagen
+
+```
+IMAGEN SUBIDA VÍA HTTP (bytes multipart)
+         │
+         ▼ Image.open(io.BytesIO(contents)).convert("RGB")
+PIL Image [H×W×3]  ← tamaño original de la foto del agricultor
+         │
+         ▼ transform(image)   [mismo pipeline que entrenamiento]
+Tensor  [3, 64, 64]
+         │
+         ▼ .unsqueeze(0)   ← añade dimensión de batch = 1
+Tensor  [1, 3, 64, 64]   ← "batch de una sola imagen"
+         │
+         ▼ torch.no_grad(): ACTIVE_MODEL(input_tensor)
+Tensor  [1, 3]   ← 3 logits (ej: [-0.5, 2.1, 0.3])
+         │
+         ▼ F.softmax(outputs, dim=1)
+Tensor  [1, 3]   ← probabilidades (ej: [0.05, 0.72, 0.23])  → suman 1.0
+         │
+         ▼ torch.max(probabilities, 1)
+confidence = 0.72,  predicted_idx = 1
+         │
+         ▼ CLASS_NAMES[1]
+"Planta_Sana"
+         │
+         ▼ JSONResponse
+{"status": "success", "diagnostico": "Planta_Sana", "confianza": 0.72}
+```
+
+---
+
+## 5. ¿Por qué esto y no otra cosa? (Contexto del proyecto)
+
+Esta sección conecta cada decisión técnica con el problema agrícola concreto.
+
+### ¿Por qué CrossEntropyLoss y no MSE?
+
+MSE (Error Cuadrático Medio) es para **regresión** (predecir valores continuos como temperatura o peso). Aquí el problema es de **clasificación**: la respuesta correcta es una de 3 etiquetas discretas. CrossEntropyLoss está diseñada para esto porque:
+- Aplica Softmax internamente → interpreta los logits como probabilidades
+- Penaliza exponencialmente cuando el modelo está muy equivocado
+- Es la función estándar para clasificación multiclase en toda la literatura
+
+### ¿Por qué Adam y no SGD puro?
+
+Con ~630 actualizaciones totales (10 épocas × 63 batches), el tiempo es limitado. Adam converge más rápido porque adapta el learning rate **por parámetro**: los pesos que ven gradientes pequeños (como los de conv1) reciben pasos más grandes; los que ven gradientes grandes (como fc1) reciben pasos más pequeños. SGD usaría el mismo lr para todos, requiriendo más épocas para converger.
+
+### ¿Por qué ReLU y no Sigmoid?
+
+La red tiene 5 capas con activación (relu1, relu2, relu3 + las internas de conv). Si se usara Sigmoid, el gradiente se multiplicaría por `σ'(x) ≤ 0.25` en cada capa hacia atrás. Después de 3 capas: `0.25³ = 0.016` → los pesos de conv1 recibirían gradientes casi nulos y **no aprenderían** (vanishing gradient). ReLU tiene derivada = 1 para x > 0, evitando este colapso.
+
+### ¿Por qué IMG_SIZE=64 y no 224 (como ImageNet)?
+
+El modelo corre en **CPU local** (Edge Computing). Una imagen de 224×224 tiene 12× más píxeles que una de 64×64. Esto significa:
+- 12× más operaciones por convolución
+- 12× más memoria por batch
+- ~10× más tiempo de entrenamiento
+
+64px captura suficiente detalle para distinguir manchas de Oídio (blancas), Tizón (marrón oscuro) y hoja sana (verde uniforme) sin necesitar GPU.
+
+### ¿Por qué CLASS_NAMES en orden alfabético?
+
+`torchvision.datasets.ImageFolder` asigna etiquetas numéricas según el orden **alfabético** de los subdirectorios de `data/`:
+```
+data/Oidio_Vid/        → índice 0
+data/Planta_Sana/      → índice 1
+data/Tizon_Tardio_Papa/ → índice 2
+```
+Si en `api_vision.py` `CLASS_NAMES` estuviera en otro orden (ej. el mismo que `CLASSES` en `entrenar_cnn.py`: `["Planta_Sana", "Tizon_Tardio_Papa", "Oidio_Vid"]`), el modelo diría "Planta_Sana" cuando en realidad predijo el índice 0 = "Oidio_Vid". **Este bug ya ocurrió y fue corregido en la Sesión 2.**
+
+---
+
+## 6. Parámetros Totales de la Red
 
 | Capa | Cálculo | Parámetros |
 |---|---|---|
@@ -114,7 +263,7 @@
 
 ---
 
-## 5. Trazabilidad Inter-Archivo
+## 7. Trazabilidad Inter-Archivo
 
 ```mermaid
 graph LR
@@ -143,7 +292,7 @@ graph LR
 
 ---
 
-## 6. Áreas de Mejora Identificadas
+## 8. Áreas de Mejora Identificadas
 
 | Área | Estado Actual | Recomendación |
 |---|---|---|
@@ -152,3 +301,38 @@ graph LR
 | **Normalización** | Genérica (0.5, 0.5, 0.5) | Calcular media/std real del dataset PlantVillage, o usar valores de ImageNet. |
 | **Validación** | Sin split train/val | Usar `random_split` para crear conjunto de validación (80/20) y monitorear overfitting. |
 | **Global Avg Pool** | fc1 tiene 524K params | Reemplazar Flatten+fc1 por `nn.AdaptiveAvgPool2d(1)` + `Linear(32,3)` → ~99 params. |
+
+---
+
+## 9. Preguntas de Auto-Evaluación
+
+Úsalas para verificar que entiendes el proyecto, no solo que lo memorizaste.
+
+### Sobre Tensores y Shapes
+- ¿Qué shape tiene el tensor después de `pool2` y antes del flatten? ¿Cómo se calcula ese número?
+- ¿Por qué se llama `.unsqueeze(0)` en la inferencia pero no en el entrenamiento?
+- Si `IMG_SIZE` cambiara de 64 a 128, ¿qué valor habría que cambiar en `fc1`? ¿Por qué?
+
+### Sobre la Arquitectura CNN
+- ¿Qué detectan los filtros de `conv1` vs los de `conv2`? ¿Por qué hay más en la segunda?
+- ¿Qué pasaría si se eliminara el `MaxPool`? ¿Cuántos parámetros tendría `fc1`?
+- ¿Por qué se usa `padding=1` y no `padding=0`?
+
+### Sobre Entrenamiento y Backpropagation
+- Nombra los 5 pasos de cada iteración de entrenamiento en orden.
+- ¿Qué pasaría si se olvidara llamar a `optimizer.zero_grad()` antes del backward?
+- ¿Por qué se usa `loss.item()` en vez de solo `loss` para acumular el running_loss?
+
+### Sobre Hiperparámetros
+- ¿Qué síntoma verías en el loss si `EPOCHS=1` fuera insuficiente?
+- ¿Qué riesgo tiene subir `BATCH_SIZE` de 32 a 512 en este proyecto?
+- Si `lr=1.0`, ¿qué podría pasarle al loss durante el entrenamiento?
+
+### Sobre el Proyecto Completo
+- ¿Por qué `CLASS_NAMES` en `api_vision.py` está en orden alfabético y no en el mismo orden que `CLASSES` en `entrenar_cnn.py`?
+- ¿Qué error daría `load_state_dict()` si agregas una capa a `AgricolaCNN` en `entrenar_cnn.py` pero no la replicas en `api_vision.py`?
+- ¿Por qué se usa `torch.no_grad()` en inferencia? ¿Qué pasaría si no se usara?
+- ¿Cómo sabe la red si una hoja tiene Oídio si nadie le explicó cómo se ve el Oídio?
+
+> [!TIP]
+> Las respuestas a todas las preguntas anteriores están en los comentarios de `entrenar_cnn.py` y `api_vision.py`. Si no puedes responder alguna sin mirar el código, vuelve al archivo correspondiente.
