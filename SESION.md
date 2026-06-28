@@ -144,7 +144,35 @@ Desde Claude Code se puede ver y disparar el flujo directamente vía MCP (sin ab
 - **Qué NO puede:** editar nodos (eso sigue siendo manual en la UI)
 - **Para iterar rápido:** conviene activar `n8n_workflow_final.json` (tiene webhook, no Form Trigger) y dispararlo con `call_webhook_post`
 
-**Migración pendiente:** el compañero contrató 14 días gratis de n8n cloud. Una vez lista la disertación (en 2 días), migrar el flujo ahí para que quede autofuncionando sin depender del PC local.
+**Migración pendiente:** el compañero contrató 14 días gratis de n8n cloud. Una vez lista la disertación, migrar el flujo ahí para que quede autofuncionando sin depender del PC local.
+
+---
+
+## Telegram Trigger y exposición pública de n8n
+
+El Telegram Trigger funciona via **webhook**: Telegram envía las actualizaciones (fotos, mensajes) a una URL de n8n. Para que esto funcione, n8n debe ser accesible desde internet.
+
+### En desarrollo local (ambiente actual)
+
+**Opción A — tunnel incorporado en n8n (recomendada, cero instalación):**
+```bash
+npx n8n start --tunnel
+```
+n8n crea automáticamente una URL pública temporal (`https://xxxxx.hooks.n8n.cloud`) y la registra como webhook en Telegram al activar el workflow.
+
+**Opción B — ngrok manual:**
+```bash
+ngrok http 5678
+```
+Genera una URL pública (`https://abc123.ngrok.io`) que redirige a `localhost:5678`. Hay que configurar `N8N_EDITOR_BASE_URL` y `WEBHOOK_URL` si n8n no detecta la URL automáticamente.
+
+### En producción (n8n cloud / VPS con IP pública)
+No se necesita tunnel ni ngrok. La instancia ya tiene URL pública y Telegram llega directamente. Por eso la migración a la instancia cloud del compañero elimina esta complejidad.
+
+### Bot de Telegram del proyecto
+- **Bot:** `@FitoScanAIBot` (nombre: FitoScanBot)
+- **Token:** guardado en la credencial "FitoScan Bot" de n8n — NO hardcodear en código ni en archivos del repo
+- **Workflow:** `n8n_workflow_telegram.json` (ID en n8n local: `0EL3hcEqE0M0LSdV`)
 
 ---
 
