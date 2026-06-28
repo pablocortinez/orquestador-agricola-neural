@@ -24,9 +24,10 @@ El sistema corre todo local (Edge Computing): mínima latencia, sin depender de 
 | `src/api_vision.py` | API FastAPI que carga el modelo `.pth` y expone `/predecir_muestra` |
 | `src/entrenar_cnn.py` | Script para entrenar la CNN desde cero (genera `modelo_vision.pth`) |
 | `modelo_vision.pth` | Pesos del modelo ya entrenado — listo para usar |
-| `n8n_workflow_demo.json` | Flujo n8n con formulario web para demo/presentación |
+| `n8n_workflow_demo.json` | Flujo n8n con formulario web para demo/presentación (Form Trigger) |
+| `n8n_workflow_telegram.json` | **Flujo activo**: bot Telegram `@FitoScanAIBot` → CNN → Clima → Gemini → respuesta |
 | `n8n_workflow_final.json` | Flujo n8n para producción (recibe imágenes por webhook) |
-| `data/` | Dataset de hojas: `Planta_Sana/`, `Tizon_Tardio_Papa/`, `Oidio_Vid/` |
+| `data/` | Dataset PlantVillage: 1000 Oidio_Vid / 1000 Tizon / 152 Planta_Sana (desbalanceado) |
 | `graphify-out/graph.html` | Grafo interactivo de la arquitectura del proyecto (estado actual del código) |
 | `mapa_flujo_telegram_agricola.html` | Mockup del flujo **objetivo**: bot de Telegram reemplazando el Form Trigger. Referencia de hacia dónde evoluciona el sistema. Ver junto al grafo. |
 
@@ -46,8 +47,17 @@ uvicorn src.api_vision:app --port 8001
 ```
 Cuando aparezca `✅ Modelo PyTorch cargado en memoria desde 'modelo_vision.pth'`, está lista.
 
-### 3. n8n ya está corriendo
-El flujo `Demo Final Orquestador (CNN + Clima + LLM)` ya está importado en n8n local (`localhost:5678`).
+### 3. Levantar ngrok (necesario para el Telegram Trigger)
+El Telegram Trigger requiere que n8n sea accesible desde internet. En v2.19.5 el `--tunnel` incorporado no funciona, usar ngrok:
+```bash
+ngrok http 5678
+```
+Esto genera una URL pública (ej. `https://abc123.ngrok-free.app`). n8n la detecta automáticamente al activar el workflow de Telegram.
+
+### 4. n8n ya está corriendo
+Los flujos `Demo Final Orquestador` y `Orquestador Agrícola - Bot Telegram (@FitoScanAIBot)` están importados en n8n local (`localhost:5678`).
+- Workflow demo (Form Trigger): ID `eiHrG2muhzHk01Ib`
+- Workflow Telegram (activo): ID `0EL3hcEqE0M0LSdV`
 
 ---
 
@@ -154,17 +164,17 @@ El Telegram Trigger funciona via **webhook**: Telegram envía las actualizacione
 
 ### En desarrollo local (ambiente actual)
 
-**Opción A — tunnel incorporado en n8n (recomendada, cero instalación):**
+**Opción A — tunnel incorporado en n8n:**
 ```bash
 npx n8n start --tunnel
 ```
-n8n crea automáticamente una URL pública temporal (`https://xxxxx.hooks.n8n.cloud`) y la registra como webhook en Telegram al activar el workflow.
+⚠️ **No funciona en v2.19.5** (versión actual). No genera URL pública.
 
-**Opción B — ngrok manual:**
+**Opción B — ngrok manual (solución actual):**
 ```bash
 ngrok http 5678
 ```
-Genera una URL pública (`https://abc123.ngrok.io`) que redirige a `localhost:5678`. Hay que configurar `N8N_EDITOR_BASE_URL` y `WEBHOOK_URL` si n8n no detecta la URL automáticamente.
+Genera una URL pública (`https://abc123.ngrok-free.app`) que redirige a `localhost:5678`. n8n la detecta automáticamente al activar el workflow de Telegram.
 
 ### En producción (n8n cloud / VPS con IP pública)
 No se necesita tunnel ni ngrok. La instancia ya tiene URL pública y Telegram llega directamente. Por eso la migración a la instancia cloud del compañero elimina esta complejidad.
@@ -215,17 +225,23 @@ Cada corrida del flujo completo = 1 llamada a Gemini → 250/día es más que su
 
 ### Sesión 2 — 2026-06-28
 
-**Objetivo:** Continuar documentando el proyecto y preparar la defensa ante el profe.
+**Objetivo:** Documentar, corregir el modelo CNN y construir el flujo de Telegram.
 
 **Lo que se hizo:**
-- Copiado `mapa_flujo_telegram_agricola.html` a la raíz del proyecto y referenciado como archivo inicial de contexto (flujo objetivo: bot Telegram)
-- Confirmada la conexión MCP de Claude Code con el n8n local (`localhost:5678`): ve y puede disparar el workflow `eiHrG2muhzHk01Ib`
-- Explicación del código Python (`api_vision.py` / `entrenar_cnn.py` / `AgricolaCNN`) entregada de forma conversacional para que el usuario y sus 2 compañeros puedan defenderlo ante el profe
-- Verificados límites de Gemini 2.5 Flash free tier (~250 RPD, ~10 RPM) y registrados aquí para referencia
-- Actualizado este `SESION.md`: tabla de archivos clave, sección arquitectura objetivo, sección MCP n8n, sección límites Gemini
-- Primer commit local con todos los cambios de las dos sesiones (sin push al remoto)
+- Copiado `mapa_flujo_telegram_agricola.html` como referencia del flujo objetivo
+- Confirmada conexión MCP de Claude Code con n8n local
+- **Bug crítico encontrado y corregido:** modelo entrenado con datos sintéticos (`data_train/`) en vez de imágenes reales (`data/`). Reentrenado con PlantVillage real → ~87% precisión
+- **Segundo bug corregido:** `CLASS_NAMES` estaba en orden incorrecto respecto al orden alfabético que usa `ImageFolder` → etiquetas trocadas. Corregido en `api_vision.py`
+- Identificado desbalance del dataset: 152 `Planta_Sana` vs 1000 de las otras dos clases (punto a mencionar ante el profe como área de mejora)
+- README actualizado: nombre raíz, archivos nuevos, paso de instalación, roadmap con Telegram
+- Credenciales sensibles limpiadas de `SESION.md` (repo es público)
+- Creado bot `@FitoScanAIBot` en BotFather, credencial "FitoScan Bot" en n8n
+- Generado `n8n_workflow_telegram.json` e importado en n8n (ID: `0EL3hcEqE0M0LSdV`)
+- Descubierto que `npx n8n start --tunnel` no funciona en v2.19.5 → usando ngrok
+- Workflow de Telegram configurado: API Clima ✅, credencial Telegram ✅, Gemini ✅
+- 5 commits locales en `master` (sin push — remote es repo de Pablo)
 
-**Estado al final de la sesión:** documentación completa, MCP conectado a n8n, pendiente prueba end-to-end vía webhook y planificación de la migración a n8n cloud del compañero.
+**Estado actual:** workflow de Telegram configurado, ngrok levantado, pendiente activar y probar end-to-end enviando foto a `@FitoScanAIBot`. Disertación en ~2 días.
 
 ---
 
