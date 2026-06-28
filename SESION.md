@@ -241,7 +241,7 @@ Cada corrida del flujo completo = 1 llamada a Gemini → 250/día es más que su
 - Workflow de Telegram configurado: API Clima ✅, credencial Telegram ✅, Gemini ✅
 - 5 commits locales en `master` (sin push — remote es repo de Pablo)
 
-**Estado actual:** workflow de Telegram configurado, ngrok levantado, pendiente activar y probar end-to-end enviando foto a `@FitoScanAIBot`. Disertación en ~2 días.
+**Estado final:** ✅ **Flujo completo operativo y probado desde celular externo.** Bot `@FitoScanAIBot` recibe fotos de cualquier usuario, la CNN diagnostica (ej. Oidio_Vid con alta confianza), cruza con clima real de Santiago vía OpenWeatherMap, Gemini genera recomendación de tratamiento personalizada y la devuelve al chat de Telegram. Probado exitosamente con imagen de rosa con Oídio desde dispositivo externo. Disertación en ~1 día.
 
 ---
 
