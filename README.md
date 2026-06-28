@@ -37,6 +37,7 @@ El proyecto opera bajo una topología de tres capas fuertemente desacopladas:
 │   └── entrenar_cnn.py               # Script de entrenamiento PyTorch (exporta .pth).
 ├── modelo_vision.pth                 # Pesos de la red neuronal entrenada con datos reales.
 ├── n8n_workflow_demo.json            # Flujo de n8n para pruebas interactivas vía Formulario Web.
+├── n8n_workflow_telegram.json        # Flujo activo: bot @FitoScanAIBot (Telegram → CNN → Clima → Gemini).
 ├── n8n_workflow_final.json           # Flujo de n8n para despliegue automatizado vía Webhooks.
 ├── mapa_flujo_telegram_agricola.html # Mockup interactivo del flujo objetivo (bot de Telegram).
 ├── SESION.md                         # Bitácora del proyecto: configuración, historial y decisiones.
@@ -97,7 +98,7 @@ El archivo `n8n_workflow_demo.json` incluye un **Form Trigger**, lo cual genera 
 ---
 
 ## 🛠️ Escalabilidad Futura (Roadmap)
-- **Bot de Telegram**: Reemplazar el Form Trigger web por un bot de Telegram que reciba fotos directamente desde el celular del agricultor. El flujo objetivo está documentado en `mapa_flujo_telegram_agricola.html`, incluyendo 3 rutas de respuesta según la confianza del diagnóstico.
+- **Bot de Telegram** ✅ *(implementado)*: `@FitoScanAIBot` recibe fotos desde el celular del agricultor vía Telegram. Flujo documentado en `n8n_workflow_telegram.json` con 3 rutas de respuesta según la confianza del diagnóstico (≥0.80 diagnóstico definitivo, 0.60-0.79 tentativo, <0.60 pide nueva foto).
 - **Despliegue Cloud**: Migrar el flujo n8n a una instancia cloud para que funcione sin depender del PC local. Flujo de producción disponible en `n8n_workflow_final.json`.
 - **Entrenamiento Continuo**: Configurar un *pipeline* que reentrene el modelo periódicamente agregando nuevas clasificaciones de plagas a `data/`.
 
