@@ -285,11 +285,17 @@ Cada corrida del flujo completo = 1 llamada a Gemini → 250/día es más que su
 - `Oidio_Vid` se mantiene desde el dataset original (no está en el archive de Kaggle emmarex)
 - README actualizado con sección Dataset completa y tabla de mapeo Kaggle → carpetas del proyecto
 
-**Pendiente en esta sesión:**
-- Script de migración de datos (renombrar/copiar carpetas al formato del proyecto)
-- Reentrenar CNN con 14 clases
-- Actualizar `CLASS_NAMES` en `api_vision.py`
+**Completado en esta sesión:**
+- Script `preparar_dataset.py` ejecutado — data/ migrada a 14 clases (~11.500 imgs)
+- CNN reentrenada con 14 clases, fc1=256, augmentation, WeightedRandomSampler
+- Loss final: 0.2104 (convergencia en 15 épocas, partió en 1.4425)
+- `modelo_vision.pth` regenerado (8.4MB, era 2MB con 3 clases)
+- `CLASS_NAMES` en `api_vision.py` actualizado a 14 clases
+
+**Pendiente:**
 - Actualizar prompt de Gemini en n8n para manejar 14 diagnósticos
+- Probar bot con las nuevas clases (tomate, pimiento, etc.)
+- Push al fork y PR
 
 ---
 

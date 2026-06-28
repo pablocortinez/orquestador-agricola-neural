@@ -389,7 +389,7 @@ def train_model():
     # se necesita redefinir la misma clase AgricolaCNN y llamar model.load_state_dict().
     export_path = "modelo_vision.pth"
     torch.save(model.state_dict(), export_path)
-    print(f"\n✅ Modelo exportado exitosamente a '{export_path}'")
+    print(f"\nModelo exportado exitosamente a '{export_path}'")
     print("Este archivo será cargado por FastAPI en la Fase 2.")
 
 if __name__ == "__main__":
