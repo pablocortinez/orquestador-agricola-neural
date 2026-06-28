@@ -16,3 +16,6 @@ __pycache__/
 .n8n/
 
 graphify-out/
+
+# Dataset de imágenes — no se versiona, ver README para fuente y estructura
+data/

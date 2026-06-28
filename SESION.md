@@ -274,4 +274,23 @@ Cada corrida del flujo completo = 1 llamada a Gemini → 250/día es más que su
 
 ---
 
+### Sesión 3 — 2026-06-28 (continuación)
+
+**Objetivo:** Ampliar el dataset de 3 clases a 14 usando PlantVillage completo.
+
+**Decisiones tomadas:**
+- `data/` excluido de git (no estaba trackeado, agregado a `.gitignore` igual como prevención)
+- Dataset expandido de 3 → 14 clases usando `C:\Users\nicoa\Downloads\archive\PlantVillage`
+- `Planta_Sana` se construye fusionando `Potato___healthy` + `Tomato_healthy` + `Pepper__bell___healthy` (cap ~1000) para corregir el desbalance original de 152 imágenes
+- `Oidio_Vid` se mantiene desde el dataset original (no está en el archive de Kaggle emmarex)
+- README actualizado con sección Dataset completa y tabla de mapeo Kaggle → carpetas del proyecto
+
+**Pendiente en esta sesión:**
+- Script de migración de datos (renombrar/copiar carpetas al formato del proyecto)
+- Reentrenar CNN con 14 clases
+- Actualizar `CLASS_NAMES` en `api_vision.py`
+- Actualizar prompt de Gemini en n8n para manejar 14 diagnósticos
+
+---
+
 *Añadir una entrada en "Historial de sesiones" cada vez que se trabaje en el proyecto.*

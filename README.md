@@ -30,7 +30,7 @@ El proyecto opera bajo una topología de tres capas fuertemente desacopladas:
 
 ```text
 📁 orquestador-agricola-neural/
-├── 📁 data/                          # Dataset PlantVillage (Kaggle: emmarex/plantdisease): Oidio_Vid/, Planta_Sana/, Tizon_Tardio_Papa/
+├── 📁 data/                          # Dataset local — NO versionado en git (ver sección Dataset)
 ├── 📁 docs/                          # Documentación teórica y guías de estudio del modelo.
 ├── 📁 src/                           # Código fuente de producción.
 │   ├── api_vision.py                 # Microservicio FastAPI para inferencia del modelo.
@@ -94,6 +94,51 @@ El archivo `n8n_workflow_demo.json` incluye un **Form Trigger**, lo cual genera 
    - El nodo **FastAPI** reconoce la enfermedad en tiempo real.
    - El nodo **OpenWeatherMap** captura el clima actual de la zona.
    - El nodo **Gemini** cruza la información clínica + meteorológica para darte el veredicto final.
+
+---
+
+## 📊 Dataset
+
+El dataset **no está versionado en git** por su tamaño (~18.000 imágenes). Descárgalo desde Kaggle y organiza la carpeta `data/` con la siguiente estructura:
+
+**Fuente:** [kaggle.com/datasets/emmarex/plantdisease](https://www.kaggle.com/datasets/emmarex/plantdisease)
+
+```text
+data/
+├── Oidio_Vid/                  # 1000 imágenes  — Oídio en vid
+├── Planta_Sana/                # ~1000 imágenes — Hojas sanas (papa + tomate + pimiento)
+├── Tizon_Tardio_Papa/          # 1000 imágenes  — Tizón tardío (Phytophthora infestans)
+├── Tizon_Temprano_Papa/        # 1000 imágenes  — Tizón temprano (Alternaria solani)
+├── Mancha_Bact_Pimiento/       #  997 imágenes  — Mancha bacteriana en pimiento
+├── Mancha_Bact_Tomate/         # 2127 imágenes  — Mancha bacteriana en tomate
+├── Tizon_Temprano_Tomate/      # 1000 imágenes  — Tizón temprano en tomate
+├── Tizon_Tardio_Tomate/        # 1909 imágenes  — Tizón tardío en tomate
+├── Moho_Foliar_Tomate/         #  952 imágenes  — Moho foliar (Fulvia fulva)
+├── Septoria_Tomate/            # 1771 imágenes  — Septoriosis foliar
+├── Arana_Roja_Tomate/          # 1676 imágenes  — Araña roja (Tetranychus urticae)
+├── Mancha_Diana_Tomate/        # 1404 imágenes  — Mancha diana (Corynespora)
+├── Virus_Rizo_Tomate/          # 3209 imágenes  — Virus del rizado amarillo (TYLCV)
+└── Mosaico_Tomate/             #  373 imágenes  — Virus del mosaico del tomate (ToMV)
+```
+
+**Mapeo desde Kaggle → carpetas del proyecto:**
+
+| Carpeta Kaggle | Carpeta `data/` |
+|---|---|
+| `Potato___Late_blight` | `Tizon_Tardio_Papa` |
+| `Potato___Early_blight` | `Tizon_Temprano_Papa` |
+| `Potato___healthy` + `Tomato_healthy` + `Pepper__bell___healthy` | `Planta_Sana` (cap. ~1000) |
+| `Tomato_Bacterial_spot` | `Mancha_Bact_Tomate` |
+| `Tomato_Early_blight` | `Tizon_Temprano_Tomate` |
+| `Tomato_Late_blight` | `Tizon_Tardio_Tomate` |
+| `Tomato_Leaf_Mold` | `Moho_Foliar_Tomate` |
+| `Tomato_Septoria_leaf_spot` | `Septoria_Tomate` |
+| `Tomato_Spider_mites_Two_spotted_spider_mite` | `Arana_Roja_Tomate` |
+| `Tomato__Target_Spot` | `Mancha_Diana_Tomate` |
+| `Tomato__Tomato_YellowLeaf__Curl_Virus` | `Virus_Rizo_Tomate` |
+| `Tomato__Tomato_mosaic_virus` | `Mosaico_Tomate` |
+| `Pepper__bell___Bacterial_spot` | `Mancha_Bact_Pimiento` |
+| *(fuente externa)* | `Oidio_Vid` |
 
 ---
 
