@@ -32,7 +32,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms
 from PIL import Image
 
@@ -45,9 +45,24 @@ from PIL import Image
 DATA_DIR = "data"
 
 # ─── HIPERPARÁMETRO: CLASSES ───
-# Lista de las 3 clases objetivo. Define num_classes=3 para la capa de salida.
-# Contexto agrícola: cubre planta sana + 2 enfermedades foliares comunes en Chile.
-CLASSES = ["Planta_Sana", "Tizon_Tardio_Papa", "Oidio_Vid"]
+# 14 clases en ORDEN ALFABÉTICO (ImageFolder asigna etiquetas así).
+# Este orden debe coincidir con CLASS_NAMES en api_vision.py.
+CLASSES = [
+    "Arana_Roja_Tomate",
+    "Mancha_Bact_Pimiento",
+    "Mancha_Bact_Tomate",
+    "Mancha_Diana_Tomate",
+    "Moho_Foliar_Tomate",
+    "Mosaico_Tomate",
+    "Oidio_Vid",
+    "Planta_Sana",
+    "Septoria_Tomate",
+    "Tizon_Tardio_Papa",
+    "Tizon_Tardio_Tomate",
+    "Tizon_Temprano_Papa",
+    "Tizon_Temprano_Tomate",
+    "Virus_Rizo_Tomate",
+]
 
 # ─── HIPERPARÁMETRO: IMG_SIZE = 64 ───
 # Dimensión espacial a la que se redimensionan todas las imágenes (64×64 píxeles).
@@ -63,13 +78,11 @@ IMG_SIZE = 64
 # converger a mínimos más agudos (peor generalización).
 BATCH_SIZE = 32
 
-# ─── HIPERPARÁMETRO: EPOCHS = 10 ───
-# Número de pasadas completas por todo el dataset durante el entrenamiento.
-# Justificación: 10 épocas es conservador. Con ~2000 imágenes y batch=32 (~63
-# iteraciones/época), el modelo tiene 630 actualizaciones totales de pesos.
-# Suficiente para convergencia en un dataset pequeño sin riesgo severo de
-# overfitting. Si el loss no converge, incrementar a 20-30.
-EPOCHS = 10
+# ─── HIPERPARÁMETRO: EPOCHS = 15 ───
+# Con 14 clases y ~11.500 imágenes (~360 batches/época), 15 épocas = ~5400
+# actualizaciones de pesos. Más épocas que la versión de 3 clases porque el
+# espacio de decisión es más complejo (14 fronteras vs 3).
+EPOCHS = 15
 
 def generate_mock_dataset():
     """Genera imágenes falsas (ruido de colores) si no existe el dataset real.
@@ -112,8 +125,12 @@ generate_mock_dataset()
 # ─── HIPERPARÁMETRO: Normalize((0.5,0.5,0.5), (0.5,0.5,0.5)) ───
 # Normalización genérica. Para mayor precisión se usarían las medias/desviaciones
 # reales del dataset PlantVillage o las de ImageNet (0.485, 0.456, 0.406).
+# Data augmentation en entrenamiento: reduce overfitting y compensa desbalance.
+# RandomHorizontalFlip y RandomRotation generan variantes sintéticas de cada imagen.
 transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(15),
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
@@ -125,12 +142,17 @@ transform = transforms.Compose([
 # Este orden DEBE coincidir con CLASS_NAMES en api_vision.py para que la predicción sea correcta.
 dataset = datasets.ImageFolder(root=DATA_DIR, transform=transform)
 
-# ─── DATALOADER: Segmentación en mini-batches ───
-# Envuelve el dataset en un iterador que entrega tensores de shape [B, C, H, W].
-# Con batch_size=32: cada iteración entrega un tensor [32, 3, 64, 64].
-# shuffle=True: baraja los datos cada época para evitar que el modelo memorice
-# el orden de las muestras (reduce overfitting y mejora generalización).
-dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+# WeightedRandomSampler: compensa el desbalance de clases (Mosaico_Tomate tiene
+# solo 373 imgs vs 1000 de otras clases). Asigna mayor probabilidad de muestreo
+# a las clases con menos imágenes, de modo que cada clase aparezca con frecuencia
+# similar en cada época — sin necesidad de duplicar imágenes manualmente.
+class_counts = [0] * len(dataset.classes)
+for _, label in dataset.samples:
+    class_counts[label] += 1
+weights = [1.0 / class_counts[label] for _, label in dataset.samples]
+sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
+
+dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, sampler=sampler)
 
 # -----------------------------------------------------------------------------
 # 2. DEFINICIÓN DE LA ARQUITECTURA CNN
@@ -218,15 +240,12 @@ class AgricolaCNN(nn.Module):
         # compacta y discriminativa. 64 neuronas ofrecen capacidad suficiente para
         # separar 3 clases sin sobreajustar en un dataset de ~2000 imágenes.
         # Dimensión calculada: IMG_SIZE=64 → pool1(32) → pool2(16), entonces 32*16*16=8192.
-        self.fc1 = nn.Linear(32 * 16 * 16, 64)
+        # fc1 aumentado a 256 neuronas (era 64) para mayor capacidad con 14 clases.
+        self.fc1 = nn.Linear(32 * 16 * 16, 256)
         self.relu3 = nn.ReLU()
 
-        # ─── CAPA DE SALIDA ───
-        # fc2 produce 3 logits crudos (uno por clase). No tiene activación porque
-        # CrossEntropyLoss aplica Softmax internamente. Cada logit representa la
-        # "puntuación" bruta de confianza para cada patología.
-        # ─── HIPERPARÁMETRO: num_classes=3 ───
-        self.fc2 = nn.Linear(64, num_classes)
+        # fc2 produce 14 logits (uno por clase).
+        self.fc2 = nn.Linear(256, num_classes)
         
     def forward(self, x):
         """
