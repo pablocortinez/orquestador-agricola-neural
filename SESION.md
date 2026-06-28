@@ -72,8 +72,8 @@ El flujo tiene 4 nodos en cadena:
 ### Nodo 3 — API Clima (OpenWeather)
 - Tipo: HTTP Request → GET a `https://api.openweathermap.org/data/2.5/weather`
 - Authentication: **None**
-- Query params: `q=Santiago`, `appid=<API_KEY>`, `units=metric`
-- API Key configurada: ✅
+- Query params: `q=Santiago`, `appid=TU_OPENWEATHERMAP_KEY`, `units=metric`
+- Obtén tu key gratis en [openweathermap.org/api](https://openweathermap.org/api) y pégala en el parámetro `appid`
 
 ### Nodo 4 — Agrónomo (Gemini)
 - Tipo: LangChain Chain LLM
@@ -88,12 +88,12 @@ El flujo tiene 4 nodos en cadena:
 
 ---
 
-## Credenciales configuradas
+## Credenciales requeridas
 
-| Servicio | Estado |
+| Servicio | Cómo configurar |
 |---|---|
-| OpenWeatherMap API Key | ✅ Configurada en nodo |
-| Google Gemini (AI Studio) | ✅ Credencial conectada, modelo gemini-2.5-flash |
+| OpenWeatherMap API Key | Regístrate en [openweathermap.org](https://openweathermap.org/api), obtén tu key y pégala en el parámetro `appid` del nodo "API Clima" |
+| Google Gemini (AI Studio) | Genera una API key en [aistudio.google.com](https://aistudio.google.com) y agrégala como credencial Google AI en n8n (modelo: `gemini-2.5-flash`) |
 
 ---
 
