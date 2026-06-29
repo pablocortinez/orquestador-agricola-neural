@@ -277,8 +277,8 @@ En vez de procesar una foto a la vez, el **DataLoader** agrupa 32 fotos en un **
 
 
 ### 📝 Auto-Evaluación (Nivel 2.5)
-<details><summary>¿Qué shape tiene el tensor después de <code>pool2</code>? ¿Cómo se calcula 8192?</summary>
-El shape es <code>[32, 32, 16, 16]</code> (32 imágenes, 32 canales, de 16x16 píxeles cada una). El 8192 sale de multiplicar los canales por los píxeles: <code>32 × 16 × 16 = 8192</code>.
+<details><summary>¿Por qué es obligatorio usar una capa "Flatten" antes de la primera Capa Densa (fc1)? ¿Qué pasaría si conectáramos la salida convolucional directamente?</summary>
+Es obligatorio por un problema de incompatibilidad geométrica (Shape Mismatch). El bloque convolucional entrega un Tensor 3D (Canales, Alto, Ancho). Sin embargo, una Capa Densa clásica solo sabe procesar Tensores 1D (Vectores). Si no usamos Flatten, el código daría error inmediato. El Flatten toma este "cubo 3D" y lo aplana en una sola fila larga (ej. de 8192 números) para que la red lineal pueda realizar su multiplicación de matrices final.
 </details>
 
 <details><summary>¿Por qué se procesan 32 fotos juntas (un batch) y no una a la vez?</summary>
