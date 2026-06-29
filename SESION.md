@@ -299,4 +299,36 @@ Cada corrida del flujo completo = 1 llamada a Gemini → 250/día es más que su
 
 ---
 
+### Sesión 4 — 2026-06-28 (continuación)
+
+**Objetivo:** Agregar ubicación dinámica al nodo de clima + actualizar grafo.
+
+**Lo que se hizo:**
+- Grafo regenerado con graphify: 40 nodos, 47 aristas, 8 comunidades. Refleja los 3 scripts Python con 14 clases, WeightedRandomSampler y la arquitectura de capas.
+- `n8n_workflow_telegram.json` reestructurado para soportar ubicación dinámica en el nodo API Clima:
+  - Nuevo nodo **IF: ¿Foto o Ubicación?** justo después del trigger — divide el flujo según el tipo de mensaje
+  - Rama foto (true): flujo existente, pero el nodo HTTP de clima reemplazado por Code node
+  - Rama ubicación/texto (false): Code node guarda `lat/lon` en `staticData[loc_<chatId>]`, responde confirmación
+  - Code node **API Clima (OpenWeather)**: prioridad → GPS guardado → caption de la foto → Santiago (fallback)
+
+**Lógica de ubicación:**
+```
+staticData['loc_<chatId>'] = { lat, lon }   ← guardado al enviar 📍
+↓
+foto llega → Code node lee staticData → si existe, usa lat/lon en OWM
+              → si no, lee caption → si no, usa Santiago
+```
+
+**Flujo de usuario:**
+1. Enviar 📍 ubicación → bot responde "Ubicación guardada ✓"
+2. Enviar foto de planta → diagnóstico usa el clima real de esa zona
+3. Enviar foto con caption (ej: "Valparaíso") → usa esa ciudad sin necesitar ubicación
+4. Enviar foto sin nada → fallback Santiago
+
+**Pendiente:**
+- Importar el JSON actualizado en n8n y probar ambas ramas (ubicación GPS + foto)
+- Recordar reemplazar `TU_OPENWEATHERMAP_KEY` en el Code node de clima al importar
+
+---
+
 *Añadir una entrada en "Historial de sesiones" cada vez que se trabaje en el proyecto.*
