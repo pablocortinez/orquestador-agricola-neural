@@ -438,8 +438,8 @@ Ambos comandos preparan a la red para la fase de "Inferencia", donde el modelo y
 - `ReLU'(x) = 1` para x > 0 → gradiente sin reducción → todas las capas aprenden
 
 ### 📝 Auto-Evaluación (Nivel 4.0)
-<details><summary>¿Por qué ReLU mitiga el vanishing gradient y Sigmoid no?</summary>
-Porque la derivada (el gradiente) de Sigmoid nunca es mayor a 0.25, por lo que el error se achica (se desvanece) al multiplicarse capa tras capa hacia atrás. ReLU, para números positivos, tiene una derivada de 1, transmitiendo el error al 100% sin que se pierda.
+<details><summary>Basado en el cálculo de derivadas, ¿cuál es la ventaja matemática principal de usar ReLU sobre Sigmoid para evitar el 'Vanishing Gradient'?</summary>
+La ventaja es que ReLU transmite la información (el gradiente de error) de forma íntegra hacia las primeras capas. El problema histórico de Sigmoide es que su derivada máxima es 0.25, lo que significa que cada vez que el error cruza una capa hacia atrás, pierde el 75% de su fuerza, "desvaneciéndose" antes de llegar al inicio. La derivada de ReLU para números positivos es exactamente 1, permitiendo que el gradiente viaje intacto al 100% por toda la red, garantizando que las primeras capas aprendan.
 </details>
 
 ---
