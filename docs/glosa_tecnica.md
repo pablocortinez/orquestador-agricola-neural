@@ -568,8 +568,8 @@ Con esto se logra una arquitectura limpia de **3 capas desacopladas**: UI (Teleg
 
 
 ### 📝 Auto-Evaluación (Nivel 5)
-<details><summary>¿Qué rol cumple n8n en la arquitectura y por qué es mejor que programar todo el Bot en Python directamente?</summary>
-Actúa como Orquestador Visual. Permite conectar APIs (Telegram, FastAPI, OpenWeather, Gemini) sin tener que escribir código enrutador. Es mucho más mantenible, escalable y fácil de modificar si mañana quieres agregar WhatsApp en lugar de Telegram.
+<details><summary>¿Qué rol exacto cumple n8n en tu arquitectura y por qué decidiste usarlo en lugar de programar todo el bot de Telegram directamente en Python?</summary>
+El principio clave de diseño aquí es el **desacoplamiento**. Si programara todo junto en un solo script, el modelo de IA (la CNN) quedaría fuertemente atado a la interfaz de usuario (Telegram). Al usar n8n, divido el sistema en 3 capas independientes: La Interfaz, Los Modelos Expertos (FastAPI/Gemini) y el Orquestador. n8n actúa como "Director de Orquesta" encargándose exclusivamente de enrutar la información. Esto mantiene el código Python limpio, enfocado 100% en la predicción visual, y hace que la arquitectura sea altamente escalable (ej. cambiar Telegram por WhatsApp en el futuro sería trivial).
 </details>
 
 <details><summary>Según tu lógica de negocio, ¿qué ocurre si la API de PyTorch devuelve una <code>confianza</code> menor a 0.65?</summary>
