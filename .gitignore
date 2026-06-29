@@ -19,3 +19,7 @@ graphify-out/
 
 # Dataset de imágenes — no se versiona, ver README para fuente y estructura
 data/
+
+# Exports directos de n8n (pueden contener credenciales hardcodeadas)
+"n8n workflows/Orquestador*"
+n8n workflows/Orquestador*.json

@@ -205,12 +205,22 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $('Telegram: Recibe Mensaje').item.json.message;\nconst chatId = msg.chat.id;\nconst caption = msg.caption;\n\nconst staticData = $getWorkflowStaticData('global');\nconst savedLoc = staticData[`loc_${chatId}`];\n\nconst apiKey = 'TU_OPENWEATHERMAP_KEY';\nlet url;\n\nif (savedLoc) {\n  url = `https://api.openweathermap.org/data/2.5/weather?lat=${savedLoc.lat}&lon=${savedLoc.lon}&appid=${apiKey}&units=metric&lang=es`;\n} else if (caption && caption.trim()) {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(caption.trim())}&appid=${apiKey}&units=metric&lang=es`;\n} else {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=Santiago&appid=${apiKey}&units=metric&lang=es`;\n}\n\nconst weatherData = await $http.request({ method: 'GET', url });\nreturn [{ json: weatherData }];"
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q",     "value": "Santiago" },
+            { "name": "appid", "value": "TU_OPENWEATHERMAP_KEY" },
+            { "name": "units", "value": "metric" },
+            { "name": "lang",  "value": "es" }
+          ]
+        },
+        "options": {}
       },
       "id": "code-clima-v2",
       "name": "API Clima (OpenWeather)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
       "position": [ 1000, 400 ]
     },
     {

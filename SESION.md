@@ -359,7 +359,7 @@ foto llega → Code node lee staticData → si existe, usa lat/lon en OWM
 
 ### Sesión 5 — 2026-06-28 (continuación)
 
-**Objetivo:** Construir y depurar el flujo v2 completo con ubicación dinámica, agente de recepción IA y prompt mejorado.
+**Objetivo:** Construir y depurar el flujo v2 completo con ubicación dinámica, agente de recepción IA y prompts finales.
 
 **Lo que se hizo:**
 
@@ -370,13 +370,32 @@ foto llega → Code node lee staticData → si existe, usa lat/lon en OWM
 - Flujo importado en n8n como workflow `EKNCDzY2Xf5DPyeE`, flujo v1 desactivado
 
 **Bugs encontrados y resueltos:**
-- `IF: ¿Tiene foto?` — `message.photo` es array, no objeto → condición cambiada a `photo?.length > 0` con operador Number → greater than → 0
-- `API Clima` con lat/lon dinámico — `$getWorkflowStaticData` no disponible en expresiones de HTTP Request → solución: Code node "Resolver Ubicación" antes del HTTP Request que lee staticData y expone `$json.lat` / `$json.lon`
-- `IF: ¿Es texto?` enviaba fotos/stickers al flujo de bienvenida — `undefined` se convertía a string `"undefined"` (not empty) → fix: `{{ $json.message?.text || '' }}`
-- `Telegram: Bienvenida` con Chat ID incorrecto — se había puesto `{{ $json.text }}` en Chat ID en vez de en Text
+- `IF: ¿Tiene foto?` — `message.photo` es array, no objeto → condición: `{{ ($json.message.photo || []).length }}` Number → greater than → 0
+- `API Clima` con lat/lon dinámico — `$getWorkflowStaticData` no disponible en expresiones HTTP Request → Code node "Resolver Ubicación" intermedio expone `$json.lat` / `$json.lon`
+- `IF: ¿Es texto?` — `undefined` se evaluaba como string `"undefined"` (not empty → siempre true) → fix final: `{{ ($json.message.text || '').length }}` Number → greater than → 0
+- `Telegram: Bienvenida` con Chat ID incorrecto — `{{ $json.text }}` estaba en Chat ID en vez de en Text
+- `Gemini: Recepción` recibía fotos — mismo bug del IF anterior, corregido con `.length`
 
-**Mejoras al prompt de Gemini (Agrónomo):**
-- Agregado tipo de agente causal a cada clase (hongo/bacteria/virus/ácaro/oomiceto)
+**Prompts finales:**
+
+**Agrónomo (Gemini)** — variables del nodo:
+```
+Diagnóstico CNN: {{$node["CNN Inferencia (FastAPI)"].json["diagnostico"]}}
+Confianza: {{$node["CNN Inferencia (FastAPI)"].json["confianza"]}}
+Ubicación: {{$json["name"]}}, {{$json["sys"]["country"]}}
+Clima: {{$json["main"]["temp"]}}°C (sensación {{$json["main"]["feels_like"]}}°C) | Humedad: {{$json["main"]["humidity"]}}% | {{$json["weather"][0]["description"]}}
+```
+Comportamiento: 3 niveles de confianza (≥0.80 definitivo 4 líneas / 0.65-0.79 tentativo 3 líneas / <0.65 pide mejor foto 2 líneas). Nunca menciona porcentajes al usuario. Respuesta en 2 partes: datos del entorno + diagnóstico. Termina siempre con disclaimer: "⚠️ Este diagnóstico es orientativo. Ante dudas, consulta a un agrónomo certificado." Si la ubicación es un barrio, menciona la ciudad principal. Reglas especiales por enfermedad (virus sin cura, Tizon_Tardio urgente, Oidio_Vid azufre, lluvia→sistémicos).
+Configuración: Temperature 0.3, Top P 0.8, Max tokens 4096.
+
+**Gemini: Recepción** — agente de bienvenida:
+Responde cualquier texto. Explica que el bot analiza fotos de hojas + usa clima GPS. Para comenzar necesita: 📍 ubicación (una sola vez, vía 📎 → Ubicación) + 📸 foto de la hoja. Máx 4 líneas, sin markdown.
+
+**Agente de recepción — nodo `Gemini: Recepción`:**
+- Tipo: Basic LLM Chain, Source: Define below
+- Prompt User Message: `{{ ($json.message?.text || 'Hola') }}`
+- System: ver prompt completo en n8n
+- Modelo: Google Gemini Chat Model, `models/gemini-2.5-flash`, credencial `NicoTY Gemini`
 - Respuesta estructurada en 2 bloques: datos del entorno + diagnóstico
 - Agregados campos: `sys.country`, `feels_like`, `name` (ciudad)
 - Reglas específicas por enfermedad: Tizon_Tardio → metalaxil/mancozeb, Oidio_Vid → azufre mojable, virus → eliminación + vectores
