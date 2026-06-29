@@ -24,12 +24,13 @@ El sistema corre todo local (Edge Computing): mínima latencia, sin depender de 
 | `src/api_vision.py` | API FastAPI que carga el modelo `.pth` y expone `/predecir_muestra` |
 | `src/entrenar_cnn.py` | Script para entrenar la CNN desde cero (genera `modelo_vision.pth`) |
 | `modelo_vision.pth` | Pesos del modelo ya entrenado — listo para usar |
-| `n8n_workflow_demo.json` | Flujo n8n con formulario web para demo/presentación (Form Trigger) |
-| `n8n_workflow_telegram.json` | **Flujo activo**: bot Telegram `@FitoScanAIBot` → CNN → Clima → Gemini → respuesta |
-| `n8n_workflow_final.json` | Flujo n8n para producción (recibe imágenes por webhook) |
-| `data/` | Dataset PlantVillage (fuente: kaggle.com/datasets/emmarex/plantdisease): 1000 Oidio_Vid / 1000 Tizon_Tardio_Papa / 152 Planta_Sana (desbalanceado) |
+| `n8n workflows/n8n_workflow_demo.json` | Flujo n8n con formulario web para demo/presentación (Form Trigger) |
+| `n8n workflows/n8n_workflow_telegram.json` | **Flujo v1 (estable)**: bot simple, clima Santiago fijo. ID: `0EL3hcEqE0M0LSdV` |
+| `n8n workflows/n8n_workflow_telegram_ubicacion.json` | **Flujo v2 (activo)**: bot completo con ubicación GPS, agente de recepción, ayuda contextual. ID: `EKNCDzY2Xf5DPyeE` |
+| `n8n workflows/n8n_workflow_final.json` | Flujo n8n para producción (recibe imágenes por webhook) |
+| `data/` | Dataset PlantVillage 14 clases (~11.500 imgs, gitignoreado) |
 | `graphify-out/graph.html` | Grafo interactivo de la arquitectura del proyecto (estado actual del código) |
-| `mapa_flujo_telegram_agricola.html` | Mockup del flujo **objetivo**: bot de Telegram reemplazando el Form Trigger. Referencia de hacia dónde evoluciona el sistema. Ver junto al grafo. |
+| `mapa_flujo_telegram_agricola.html` | Mockup del flujo objetivo original (referencia histórica) |
 
 ---
 
@@ -65,40 +66,63 @@ Los flujos `Demo Final Orquestador` y `Orquestador Agrícola - Bot Telegram (@Fi
 
 ---
 
-## Configuración del flujo n8n
+## Configuración del flujo n8n (v2 — activo)
 
-El flujo tiene 4 nodos en cadena:
+### Arquitectura completa del flujo v2
 
 ```
-[Subir Imagen (UI)] → [CNN Inferencia (FastAPI)] → [API Clima (OpenWeather)] → [Agrónomo (Gemini)]
+Telegram Trigger
+    ↓
+IF: ¿Es texto?  (message?.text || '')
+    ├─ true  → Gemini: Recepción → Telegram: Bienvenida
+    └─ false ↓
+IF: ¿Tiene ubicación?  (message.location exists)
+    ├─ true  → Guardar Ubicación (Code) → Telegram: Confirma Ubicación
+    └─ false ↓
+IF: ¿Tiene foto?  (message.photo?.length > 0)
+    ├─ true  → Telegram: Descarga Foto → CNN Inferencia (FastAPI)
+    │              → Resolver Ubicación (Code)
+    │              → API Clima (OpenWeather)
+    │              → Agrónomo (Gemini) → Telegram: Envía Veredicto
+    └─ false → Telegram: Mensaje de Ayuda
 ```
 
-### Nodo 1 — Subir Imagen (UI)
-- Tipo: Form Trigger
-- Genera un formulario web para subir la foto
-- El archivo binario sale con el nombre `data`
+### Nodo — IF: ¿Es texto?
+- Condición: `{{ $json.message?.text || '' }}` → String → is not empty
+- true: cualquier texto activa el agente de recepción (no solo /start)
 
-### Nodo 2 — CNN Inferencia (FastAPI)
-- Tipo: HTTP Request → POST a `http://127.0.0.1:8001/predecir_muestra`
-- Body: `n8n Binary File`, Name: `file`, Input Data Field Name: `data`
-- Devuelve: `{ "status": "success", "diagnostico": "Oidio_Vid", "confianza": 0.9289 }`
+### Nodo — Gemini: Recepción
+- Tipo: Basic LLM Chain (LangChain)
+- Source for Prompt: Define below
+- Prompt (User Message): `{{ $json.message.text || 'Hola' }}`
+- System Message: agente de recepción que explica qué hace el bot, cómo compartir ubicación GPS, y responde preguntas de fitopatología. Máx 4 líneas.
+- Modelo: Google Gemini Chat Model → `models/gemini-2.5-flash`, credencial `NicoTY Gemini`
 
-### Nodo 3 — API Clima (OpenWeather)
-- Tipo: HTTP Request → GET a `https://api.openweathermap.org/data/2.5/weather`
-- Authentication: **None**
-- Query params: `q=Santiago`, `appid=TU_OPENWEATHERMAP_KEY`, `units=metric`
-- Obtén tu key gratis en [openweathermap.org/api](https://openweathermap.org/api) y pégala en el parámetro `appid`
+### Nodo — Guardar Ubicación (Code)
+- Guarda `{ lat, lon }` en `$getWorkflowStaticData('global')['loc_<chatId>']`
+- Persiste entre ejecuciones del workflow
 
-### Nodo 4 — Agrónomo (Gemini)
-- Tipo: LangChain Chain LLM
-- Modelo: `gemini-2.5-flash`
-- Source for Prompt: `Define below`
-- Prompt configurado con variables de los nodos anteriores:
-  - `{{ $('CNN Inferencia (FastAPI)').item.json.diagnostico }}`
-  - `{{ $('CNN Inferencia (FastAPI)').item.json.confianza }}`
-  - `{{ $('API Clima (OpenWeather)').item.json.main.temp }}`
-  - `{{ $('API Clima (OpenWeather)').item.json.weather[0].description }}`
-  - `{{ $('API Clima (OpenWeather)').item.json.main.humidity }}`
+### Nodo — Resolver Ubicación (Code)
+- Lee staticData para obtener GPS guardado del chat
+- Agrega `lat` y `lon` al JSON (fallback: Santiago `-33.45, -70.67`)
+- Pasa también `diagnostico` y `confianza` del CNN hacia adelante
+
+### Nodo — API Clima (OpenWeather)
+- Tipo: HTTP Request → GET `https://api.openweathermap.org/data/2.5/weather`
+- Parámetros: `lat={{ $json.lat }}`, `lon={{ $json.lon }}`, `appid=KEY`, `units=metric`, `lang=es`
+- Devuelve ciudad, país, temp, sensación térmica, humedad, descripción
+
+### Nodo — Agrónomo (Gemini)
+- Tipo: LangChain Chain LLM, modelo `gemini-2.5-flash`
+- Max tokens: 4096 (sin límite de líneas), Temperature: 0.3, Top P: 0.8
+- Respuesta estructurada en **2 bloques**:
+  - Bloque 1: 📍 Ciudad, País | 🌡️ temp | 💧 humedad
+  - Bloque 2: diagnóstico completo con agente causal, síntomas, tratamiento, consideración climática
+- Reglas especiales: lluvia→sistémicos, Tizon_Tardio→metalaxil/mancozeb, virus→eliminación+vectores, Oidio_Vid→azufre mojable
+
+### Nodo — Telegram: Mensaje de Ayuda
+- Se activa cuando el mensaje no es texto, ubicación ni foto (sticker, audio, etc.)
+- Texto: instrucciones de uso resumidas
 
 ---
 
@@ -210,8 +234,10 @@ No se necesita tunnel ni ngrok. La instancia ya tiene URL pública y Telegram ll
 
 ### Bot de Telegram del proyecto
 - **Bot:** `@FitoScanAIBot` (nombre: FitoScanBot)
-- **Token:** guardado en la credencial "FitoScan Bot" de n8n — NO hardcodear en código ni en archivos del repo
-- **Workflow:** `n8n_workflow_telegram.json` (ID en n8n local: `0EL3hcEqE0M0LSdV`)
+- **Token:** guardado en la credencial "FitoScanAIBot" de n8n — NO hardcodear en código ni en archivos del repo
+- **Workflow v1 (referencia):** `n8n workflows/n8n_workflow_telegram.json` (ID: `0EL3hcEqE0M0LSdV`) — flujo estable, clima Santiago fijo
+- **Workflow v2 (activo):** `n8n workflows/n8n_workflow_telegram_ubicacion.json` (ID: `EKNCDzY2Xf5DPyeE`) — flujo completo con GPS, recepción IA, ayuda contextual
+- ⚠️ Solo uno puede estar activo a la vez — el webhook de Telegram solo apunta a uno
 
 ---
 
@@ -328,6 +354,43 @@ foto llega → Code node lee staticData → si existe, usa lat/lon en OWM
 **Pendiente:**
 - Importar el JSON actualizado en n8n y probar ambas ramas (ubicación GPS + foto)
 - Recordar reemplazar `TU_OPENWEATHERMAP_KEY` en el Code node de clima al importar
+
+---
+
+### Sesión 5 — 2026-06-28 (continuación)
+
+**Objetivo:** Construir y depurar el flujo v2 completo con ubicación dinámica, agente de recepción IA y prompt mejorado.
+
+**Lo que se hizo:**
+
+**Flujo v2 — construcción e importación:**
+- Reescrito `n8n_workflow_telegram_ubicacion.json` desde cero: Switch node (typeVersion 3 no soportado en n8n 2.19.5) reemplazado por 3 IF nodes encadenados
+- Corregida estructura de `replyKeyboardMarkup` y `replyKeyboardRemove` para importación correcta
+- Todos los n8n workflows movidos a carpeta `n8n workflows/`
+- Flujo importado en n8n como workflow `EKNCDzY2Xf5DPyeE`, flujo v1 desactivado
+
+**Bugs encontrados y resueltos:**
+- `IF: ¿Tiene foto?` — `message.photo` es array, no objeto → condición cambiada a `photo?.length > 0` con operador Number → greater than → 0
+- `API Clima` con lat/lon dinámico — `$getWorkflowStaticData` no disponible en expresiones de HTTP Request → solución: Code node "Resolver Ubicación" antes del HTTP Request que lee staticData y expone `$json.lat` / `$json.lon`
+- `IF: ¿Es texto?` enviaba fotos/stickers al flujo de bienvenida — `undefined` se convertía a string `"undefined"` (not empty) → fix: `{{ $json.message?.text || '' }}`
+- `Telegram: Bienvenida` con Chat ID incorrecto — se había puesto `{{ $json.text }}` en Chat ID en vez de en Text
+
+**Mejoras al prompt de Gemini (Agrónomo):**
+- Agregado tipo de agente causal a cada clase (hongo/bacteria/virus/ácaro/oomiceto)
+- Respuesta estructurada en 2 bloques: datos del entorno + diagnóstico
+- Agregados campos: `sys.country`, `feels_like`, `name` (ciudad)
+- Reglas específicas por enfermedad: Tizon_Tardio → metalaxil/mancozeb, Oidio_Vid → azufre mojable, virus → eliminación + vectores
+- Humedad > 80% → productos sistémicos o biológicos
+- Max tokens: 4096, Temperature: 0.3, Top P: 0.8
+
+**Agente de recepción (nuevo):**
+- Nodo `Gemini: Recepción` (Basic LLM Chain) insertado antes de `Telegram: Bienvenida`
+- Responde inteligentemente a cualquier texto: saludo, preguntas sobre el bot, fitopatología general, fuera de alcance
+- System prompt explica el GPS: el usuario comparte ubicación desde Telegram (📎 → Ubicación), el bot la recuerda automáticamente para todas las fotos siguientes
+- `IF: ¿Es texto?` ahora responde a CUALQUIER texto (no solo /start) — más intuitivo
+- Nodo `Telegram: Mensaje de Ayuda` para mensajes que no son texto/foto/ubicación (stickers, audio, etc.)
+
+**Estado final:** ✅ **Flujo v2 completamente operativo.** Bot responde inteligentemente a cualquier mensaje de texto, guarda ubicación GPS, diagnostica enfermedades en 14 clases con clima real localizado, y entrega respuesta estructurada con datos del entorno + diagnóstico completo con agente causal, síntomas y tratamiento.
 
 ---
 
