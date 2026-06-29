@@ -210,8 +210,8 @@ Guarda todos los **pesos** (valores numéricos) que los filtros y el clasificado
 Conv 1 actúa como una lupa básica que detecta características simples como bordes, líneas o cambios bruscos de color. Conv 2 toma esos bordes y los combina para detectar patrones complejos como las manchas redondas del Tizón o la textura del Oídio.
 </details>
 
-<details><summary>En tu arquitectura usas MaxPooling. ¿Por qué se "achica" la imagen espacialmente?</summary>
-Se achica para condensar la información más importante, reducir el costo computacional (menos píxeles que procesar) y darle a la red "invarianza espacial" (poder detectar una mancha sin importar si está arriba o abajo en la foto).
+<details><summary>En tu arquitectura usas MaxPooling después de cada capa convolucional. ¿Cuál es el doble objetivo de achicar la imagen espacialmente?</summary>
+Tiene dos grandes objetivos. 1) **Ahorro Computacional:** Hace un "resumen" espacial extrayendo el píxel más fuerte de un cuadrante, reduciendo drásticamente la cantidad de parámetros para que la red no colapse la memoria RAM. 2) **Invarianza Espacial (Traslacional):** Al resumir la región, a la red ya no le importa el píxel exacto donde estaba la mancha de Tizón, solo le importa que la mancha "está ahí". Esto hace al modelo robusto incluso si el agricultor toma la foto un poco movida.
 </details>
 
 <details><summary>¿Por qué aumentan las "versiones" (canales) de la imagen a medida que avanzamos?</summary>
