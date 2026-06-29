@@ -414,12 +414,8 @@ Es la magnitud y dirección que indica cómo cambia el error (Loss) si modificas
 Porque PyTorch por defecto acumula (suma) los gradientes en cada iteración. Si no los limpiamos a cero al inicio del batch, el nuevo gradiente se sumaría al del batch anterior, arruinando la actualización de pesos.
 </details>
 
-<details><summary>¿Qué diferencia hay entre <code>model.train()</code> y <code>model.eval()</code>?</summary>
-<code>model.train()</code> prepara la red para aprender, activando el cálculo de gradientes y capas como Dropout si existieran. <code>model.eval()</code> "congela" la red para hacer predicciones, desactivando Dropout para que la respuesta sea siempre determinista.
-</details>
-
-<details><summary>¿Qué hace <code>torch.no_grad()</code> y por qué se usa en inferencia?</summary>
-Le dice a PyTorch que apague el motor que registra las operaciones para calcular derivadas (grafo computacional). Esto se usa en inferencia porque no vamos a actualizar pesos, ahorrando un 50% de memoria y haciendo el cálculo más rápido.
+<details><summary>En su código de producción (API), ¿qué hacen exactamente `model.eval()` y `torch.no_grad()` y por qué apagarlos en entrenamiento sería un error?</summary>
+Ambos comandos preparan a la red para la fase de "Inferencia", donde el modelo ya no aprende, solo aplica conocimiento. 1) **`torch.no_grad()`**: Apaga el cálculo de gradientes (derivadas) en el grafo computacional de PyTorch. Como no haremos backpropagation, esto nos ahorra >50% de memoria RAM y acelera el proceso. 2) **`model.eval()`**: Congela las capas que tienen comportamiento aleatorio durante el entrenamiento (como Dropout o BatchNorm), garantizando que si le pasas la misma foto dos veces, la red te dé exactamente el mismo resultado (comportamiento determinista).
 </details>
 
 ---
