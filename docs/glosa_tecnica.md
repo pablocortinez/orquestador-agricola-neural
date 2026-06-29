@@ -455,5 +455,11 @@ graph LR
 - ¿Por qué `CLASS_NAMES` debe estar en orden alfabético?
 - ¿Qué pasaría si `IMG_SIZE=128` en entrenamiento y `64` en inferencia?
 
+### ⚫ Nivel 5 (Diseño y Futuro del Proyecto)
+- ¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?
+- ¿Por qué se eligieron los hiperparámetros actuales (`IMG_SIZE=64`, `BATCH_SIZE=32`, `EPOCHS=10`) y qué pasaría si los alteramos drásticamente?
+- Si tuvieras más tiempo para entrenar, ¿qué otros hiperparámetros agregarías o tunearías para mejorar la precisión?
+- Más allá del código actual, ¿qué otras mejoras arquitectónicas le harías al proyecto para llevarlo a un entorno 100% profesional?
+
 > [!TIP]
 > Para la disertación: domina **Niveles 1 al 3** para explicar con fluidez. Prepara **3.5** para preguntas del evaluador. **4 y 5** son para casos donde el profe profundiza mucho.
