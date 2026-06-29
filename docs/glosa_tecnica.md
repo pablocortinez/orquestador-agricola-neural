@@ -270,9 +270,10 @@ optimizer.step()               # 5. Actualizar los 529,635 pesos (Adam)
 
 Es la dirección y magnitud en que hay que mover cada peso para que el loss baje. Se calcula aplicando la **regla de la cadena** desde la capa de salida hacia la de entrada (de ahí "retro-propagación").
 
-- Si el gradiente de un peso es positivo → el peso debe bajar
-- Si es negativo → el peso debe subir
-- Si es ~0 → ese peso ya está bien o no está aprendiendo
+> 🌾 **Analogía del Topógrafo:** Imagina que el "Loss" es la altitud de un cerro con niebla y queremos llegar al valle más profundo (error cero). El gradiente es sentir el suelo con el pie para saber hacia dónde está la bajada.
+- Si el pie siente que sube (gradiente positivo) → debes dar un paso atrás (el peso baja).
+- Si el pie siente que baja (gradiente negativo) → debes avanzar (el peso sube).
+- Si el pie siente plano (~0) → llegaste al fondo del valle (peso ideal).
 
 ### CrossEntropyLoss: la función de pérdida
 
@@ -311,6 +312,8 @@ Durante inferencia no se necesita calcular gradientes (no hay backpropagation). 
 
 **Vanishing Gradient Problem:** en redes con múltiples capas, los gradientes se multiplican por la derivada de la activación en cada capa hacia atrás.
 
+> 🌾 **Analogía del Teléfono Descompuesto:** El error (gradiente) viaja desde el jefe (capa de salida) hasta el primer operario (capa de entrada). `Sigmoid` es como un trabajador que susurra: cada vez que pasa el mensaje, le baja el volumen a un 25%. Al llegar al inicio, no se escucha nada y el primer operario no corrige su trabajo. `ReLU` es un trabajador que transmite el mensaje con el volumen intacto (100%), asegurando que todos aprendan.
+
 - `Sigmoid'(x) ≤ 0.25` → después de 3 capas: `0.25³ = 0.016` → gradiente casi nulo → `conv1` no aprende nada
 - `ReLU'(x) = 1` para x > 0 → gradiente sin reducción → todas las capas aprenden
 
@@ -327,6 +330,8 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 ### ¿Por qué CrossEntropyLoss y no MSE?
 
 MSE es para regresión (valores continuos). Para clasificación, la "respuesta correcta" es una etiqueta discreta (0, 1 o 2). CrossEntropyLoss está diseñada para probabilidades: penaliza exponencialmente cuando el modelo está muy confiado pero equivocado.
+
+> 🌾 **Analogía del Estudiante Arrogante:** Si un aprendiz se equivoca pero admite "no estoy muy seguro", el reto es leve. Pero si se equivoca gritando "¡Estoy 100% seguro de que esta hoja con hongos está SANA!", la *CrossEntropy* le aplica un castigo monumental (Loss enorme) para quitarle la arrogancia rápidamente y forzar un cambio brusco en sus pesos.
 
 ### El bug de CLASS_NAMES (caso de estudio real)
 
