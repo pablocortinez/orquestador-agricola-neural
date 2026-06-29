@@ -22,70 +22,30 @@
     },
     {
       "parameters": {
-        "rules": {
-          "rules": [
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
             {
-              "outputKey": "start",
-              "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-                "conditions": [
-                  {
-                    "id": "is-start",
-                    "leftValue": "={{ $json.message.text }}",
-                    "rightValue": "/start",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true
-            },
-            {
-              "outputKey": "ubicacion",
-              "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-                "conditions": [
-                  {
-                    "id": "has-location",
-                    "leftValue": "={{ !!$json.message.location }}",
-                    "rightValue": true,
-                    "operator": { "type": "boolean", "operation": "true", "singleValue": true }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true
-            },
-            {
-              "outputKey": "foto",
-              "conditions": {
-                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-                "conditions": [
-                  {
-                    "id": "has-photo",
-                    "leftValue": "={{ !!$json.message.photo }}",
-                    "rightValue": true,
-                    "operator": { "type": "boolean", "operation": "true", "singleValue": true }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true
+              "id": "is-start",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start",
+              "operator": { "type": "string", "operation": "equals" }
             }
-          ]
+          ],
+          "combinator": "and"
         },
         "options": {}
       },
-      "id": "switch-msg-type",
-      "name": "Switch: Tipo de Mensaje",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "id": "if-is-start",
+      "name": "IF: ¿Es /start?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
       "position": [ 0, 300 ]
     },
     {
       "parameters": {
         "chatId": "={{ $json.message.chat.id }}",
-        "text": "🌿 Hola! Soy FitoScanAI, tu agrónomo digital.\n\nEnvíame una foto de una planta y te diré qué enfermedad tiene junto con el tratamiento recomendado.\n\nPara que el análisis incluya el clima real de tu zona, toca el botón de abajo 👇",
+        "text": "🌿 Hola! Soy FitoScanAI, tu agrónomo digital.\n\nEnvíame una foto de una planta y te diré qué enfermedad tiene junto con el tratamiento recomendado.\n\nPara usar el clima de tu zona, toca el botón 👇",
         "additionalFields": {
           "replyMarkup": "replyKeyboardMarkup",
           "replyKeyboardMarkup": {
@@ -95,6 +55,7 @@
                   "row": [
                     {
                       "text": "📍 Compartir mi ubicación",
+                      "requestContact": false,
                       "requestLocation": true
                     }
                   ]
@@ -102,14 +63,17 @@
                 {
                   "row": [
                     {
-                      "text": "Usar Santiago (predeterminado)"
+                      "text": "Continuar con Santiago",
+                      "requestContact": false,
+                      "requestLocation": false
                     }
                   ]
                 }
               ]
             },
             "resizeKeyboard": true,
-            "oneTimeKeyboard": true
+            "oneTimeKeyboard": true,
+            "selective": false
           }
         }
       },
@@ -126,22 +90,44 @@
     },
     {
       "parameters": {
-        "jsCode": "// Guarda la ubicación GPS del usuario en staticData (persiste entre ejecuciones)\nconst msg = $input.item.json.message;\nconst chatId = msg.chat.id;\nconst lat = msg.location.latitude;\nconst lon = msg.location.longitude;\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData[`loc_${chatId}`] = { lat, lon };\n\nreturn [{ json: { chatId, lat, lon } }];"
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-location",
+              "leftValue": "={{ $json.message.location }}",
+              "rightValue": "",
+              "operator": { "type": "object", "operation": "exists", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "code-save-loc",
-      "name": "Guardar Ubicación",
-      "type": "n8n-nodes-base.code",
+      "id": "if-has-location",
+      "name": "IF: ¿Tiene ubicación?",
+      "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [ 200, 300 ]
     },
     {
       "parameters": {
+        "jsCode": "const msg = $input.item.json.message;\nconst chatId = msg.chat.id;\nconst lat = msg.location.latitude;\nconst lon = msg.location.longitude;\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData[`loc_${chatId}`] = { lat, lon };\n\nreturn [{ json: { chatId, lat, lon } }];"
+      },
+      "id": "code-save-loc",
+      "name": "Guardar Ubicación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 400, 200 ]
+    },
+    {
+      "parameters": {
         "chatId": "={{ $json.chatId }}",
-        "text": "={{ `📍 Ubicación guardada (${$json.lat.toFixed(4)}, ${$json.lon.toFixed(4)}).\n\nAhora envíame una foto de la planta y analizaré con el clima real de tu zona. 🌱` }}",
+        "text": "={{ `📍 Ubicación guardada. Ahora envíame una foto de la planta y usaré el clima real de tu zona. 🌱` }}",
         "additionalFields": {
           "replyMarkup": "replyKeyboardRemove",
           "replyKeyboardRemove": {
-            "removeKeyboard": true
+            "selective": false
           }
         }
       },
@@ -149,12 +135,34 @@
       "name": "Telegram: Confirma Ubicación",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [ 400, 300 ],
+      "position": [ 600, 200 ],
       "credentials": {
         "telegramApi": {
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-photo",
+              "leftValue": "={{ $json.message.photo }}",
+              "rightValue": "",
+              "operator": { "type": "object", "operation": "exists", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-photo",
+      "name": "IF: ¿Tiene foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 400, 400 ]
     },
     {
       "parameters": {
@@ -165,7 +173,7 @@
       "name": "Telegram: Descarga Foto",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [ 200, 500 ],
+      "position": [ 600, 400 ],
       "credentials": {
         "telegramApi": {
           "name": "Telegram account"
@@ -193,17 +201,17 @@
       "name": "CNN Inferencia (FastAPI)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [ 400, 500 ]
+      "position": [ 800, 400 ]
     },
     {
       "parameters": {
-        "jsCode": "// Determina ubicación para el clima\n// Prioridad: 1) GPS guardado, 2) caption de la foto, 3) Santiago\nconst msg = $('Telegram: Recibe Mensaje').item.json.message;\nconst chatId = msg.chat.id;\nconst caption = msg.caption;\n\nconst staticData = $getWorkflowStaticData('global');\nconst savedLoc = staticData[`loc_${chatId}`];\n\nconst apiKey = 'TU_OPENWEATHERMAP_KEY';\nlet url;\n\nif (savedLoc) {\n  url = `https://api.openweathermap.org/data/2.5/weather?lat=${savedLoc.lat}&lon=${savedLoc.lon}&appid=${apiKey}&units=metric&lang=es`;\n} else if (caption && caption.trim()) {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(caption.trim())}&appid=${apiKey}&units=metric&lang=es`;\n} else {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=Santiago&appid=${apiKey}&units=metric&lang=es`;\n}\n\nconst weatherData = await $http.request({ method: 'GET', url });\nreturn [{ json: weatherData }];"
+        "jsCode": "const msg = $('Telegram: Recibe Mensaje').item.json.message;\nconst chatId = msg.chat.id;\nconst caption = msg.caption;\n\nconst staticData = $getWorkflowStaticData('global');\nconst savedLoc = staticData[`loc_${chatId}`];\n\nconst apiKey = 'TU_OPENWEATHERMAP_KEY';\nlet url;\n\nif (savedLoc) {\n  url = `https://api.openweathermap.org/data/2.5/weather?lat=${savedLoc.lat}&lon=${savedLoc.lon}&appid=${apiKey}&units=metric&lang=es`;\n} else if (caption && caption.trim()) {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(caption.trim())}&appid=${apiKey}&units=metric&lang=es`;\n} else {\n  url = `https://api.openweathermap.org/data/2.5/weather?q=Santiago&appid=${apiKey}&units=metric&lang=es`;\n}\n\nconst weatherData = await $http.request({ method: 'GET', url });\nreturn [{ json: weatherData }];"
       },
       "id": "code-clima-v2",
       "name": "API Clima (OpenWeather)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [ 600, 500 ]
+      "position": [ 1000, 400 ]
     },
     {
       "parameters": {
@@ -215,7 +223,7 @@
       "name": "Agrónomo (Gemini)",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.4,
-      "position": [ 800, 500 ]
+      "position": [ 1200, 400 ]
     },
     {
       "parameters": {
@@ -227,7 +235,7 @@
       "name": "Telegram: Envía Veredicto",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [ 1000, 500 ],
+      "position": [ 1400, 400 ],
       "credentials": {
         "telegramApi": {
           "name": "Telegram account"
@@ -237,17 +245,28 @@
   ],
   "connections": {
     "Telegram: Recibe Mensaje": {
-      "main": [ [ { "node": "Switch: Tipo de Mensaje", "type": "main", "index": 0 } ] ]
+      "main": [ [ { "node": "IF: ¿Es /start?", "type": "main", "index": 0 } ] ]
     },
-    "Switch: Tipo de Mensaje": {
+    "IF: ¿Es /start?": {
       "main": [
-        [ { "node": "Telegram: Bienvenida",      "type": "main", "index": 0 } ],
-        [ { "node": "Guardar Ubicación",          "type": "main", "index": 0 } ],
-        [ { "node": "Telegram: Descarga Foto",    "type": "main", "index": 0 } ]
+        [ { "node": "Telegram: Bienvenida",     "type": "main", "index": 0 } ],
+        [ { "node": "IF: ¿Tiene ubicación?",    "type": "main", "index": 0 } ]
+      ]
+    },
+    "IF: ¿Tiene ubicación?": {
+      "main": [
+        [ { "node": "Guardar Ubicación",         "type": "main", "index": 0 } ],
+        [ { "node": "IF: ¿Tiene foto?",          "type": "main", "index": 0 } ]
       ]
     },
     "Guardar Ubicación": {
       "main": [ [ { "node": "Telegram: Confirma Ubicación", "type": "main", "index": 0 } ] ]
+    },
+    "IF: ¿Tiene foto?": {
+      "main": [
+        [ { "node": "Telegram: Descarga Foto",   "type": "main", "index": 0 } ],
+        []
+      ]
     },
     "Telegram: Descarga Foto": {
       "main": [ [ { "node": "CNN Inferencia (FastAPI)", "type": "main", "index": 0 } ] ]
