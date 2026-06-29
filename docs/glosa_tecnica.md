@@ -526,8 +526,8 @@ PIL [H, W, 3]  →  Resize  →  PIL [64, 64, 3]
 ```
 
 ### 📝 Auto-Evaluación (Nivel 4.3)
-<details><summary>¿Por qué <code>CLASS_NAMES</code> debe estar obligatoriamente en orden alfabético?</summary>
-Porque la clase <code>ImageFolder</code> de PyTorch (que usamos para cargar las fotos) asigna los índices numéricos 0, 1, 2 a las carpetas en estricto orden alfabético. Si nuestro código no respeta ese orden, cruzaremos las etiquetas al predecir.
+<details><summary>¿Qué pasaría si cambiamos el orden de la lista estática <code>CLASS_NAMES</code> en producción por un tema estético?</summary>
+Provocaría un cruce de etiquetas gravísimo. La red neuronal no predice texto, predice números (índices 0, 1 o 2). Durante el entrenamiento, la función `ImageFolder` de PyTorch asignó esos índices en estricto orden alfabético a las carpetas (Oidio es 0). Si en producción ponemos a 'Planta_Sana' de primero en la lista, tomará el índice 0. Cuando ingrese una foto de Oídio, la red predecirá perfectamente el '0', pero nuestro código lo traducirá equivocadamente a 'Planta_Sana'. Por ende, ese orden jamás debe alterarse por estética.
 </details>
 
 <details><summary>¿Qué pasaría si <code>IMG_SIZE=128</code> en entrenamiento y <code>64</code> en inferencia?</summary>
