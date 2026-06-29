@@ -13,7 +13,8 @@
 - 🟠 [Nivel 3 — Cómo aprende la red (15 min)](#-nivel-3--cómo-aprende-la-red)
 - 🟠🔴 [Nivel 3.5 — El ciclo de entrenamiento con términos reales (18 min)](#-nivel-35--el-ciclo-de-entrenamiento-con-términos-reales)
 - 🔴 [Nivel 4 — Fundamentos matemáticos y decisiones de diseño (25 min)](#-nivel-4--fundamentos-matemáticos-y-decisiones-de-diseño)
-- ⚫ [Nivel 5 — Auditoría completa de hiperparámetros (referencia)](#-nivel-5--auditoría-completa-de-hiperparámetros)
+- 🟣 [Nivel 5 — La Orquestación (n8n y Telegram) (30 min)](#-nivel-5--la-orquestación-n8n-y-telegram)
+- ⚫ [Nivel 6 — Auditoría completa de hiperparámetros (referencia)](#-nivel-6--auditoría-completa-de-hiperparámetros)
 - 📝 [Preguntas de Auto-Evaluación](#-preguntas-de-auto-evaluación)
 
 ---
@@ -346,7 +347,33 @@ PIL [H, W, 3]  →  Resize  →  PIL [64, 64, 3]
 
 ---
 
-## ⚫ Nivel 5 — Auditoría Completa de Hiperparámetros
+## 🟣 Nivel 5 — La Orquestación (n8n y Telegram)
+
+**Objetivo:** Entender cómo se conectan los distintos servicios (APIs) en un flujo automatizado sin código, creando el ecosistema completo del proyecto.
+
+### ¿Qué es n8n y por qué usarlo?
+`n8n` es una herramienta de automatización de flujos de trabajo (workflow automation). En este proyecto actúa como el **"director de orquesta"**: recibe mensajes de Telegram, delega el análisis visual a tu API de PyTorch, pide el clima a otra API, y envía todo a Gemini para formular un tratamiento experto. Permite escalar y modificar el flujo sin tocar el código fuente de los modelos de IA.
+
+### El flujo del Bot (Ubicación Dinámica)
+
+Basado en el archivo `n8n_workflow_telegram_ubicacion.json`, el flujo exacto de nodos tiene esta lógica de negocio:
+
+1. **Telegram Trigger:** Escucha nuevos mensajes del agricultor.
+2. **Enrutamiento (Nodos IF):**
+   - **IF `text == /start`:** Envía un mensaje de bienvenida con un teclado especial para solicitar ubicación GPS.
+   - **IF `location exists`:** Guarda la latitud/longitud en la memoria de la sesión.
+   - **IF `photo exists`:** Descarga el archivo de imagen enviado por el agricultor.
+3. **Inferencia Visual (Nodo HTTP):** Envía la foto (como `multipart/form-data`) al endpoint `/predecir_muestra` de tu API local. Recupera las variables `diagnóstico` y `confianza`.
+4. **Clima Local (Nodo HTTP):** Usa las coordenadas guardadas para consultar la temperatura y humedad actual en la API de OpenWeather.
+5. **Agente Agrónomo (Nodo Gemini):** Se construye un *Prompt* dinámico inyectando los datos de la CNN y del clima. 
+   - **Reglas del prompt:** Si el clima reporta "lluvia", Gemini tiene estrictamente prohibido recomendar pesticidas de contacto. Si la confianza de la CNN es menor a `0.65`, el Agente desecha el diagnóstico y pide una foto más clara.
+6. **Respuesta Telegram:** Envía el veredicto final, redactado por Gemini, de vuelta al celular del usuario.
+
+Con esto se logra una arquitectura limpia de **3 capas desacopladas**: UI (Telegram) ↔ Orquestador (n8n) ↔ Modelos Especializados (CNN PyTorch + Gemini).
+
+---
+
+## ⚫ Nivel 6 — Auditoría Completa de Hiperparámetros
 
 **Referencia rápida. Usa esto para responder preguntas específicas.**
 
@@ -459,11 +486,16 @@ graph LR
 - ¿Por qué `CLASS_NAMES` debe estar en orden alfabético?
 - ¿Qué pasaría si `IMG_SIZE=128` en entrenamiento y `64` en inferencia?
 
-### ⚫ Nivel 5 (Diseño y Futuro del Proyecto)
+### 🟣 Nivel 5 (Orquestación n8n)
+- ¿Qué rol cumple `n8n` en la arquitectura y por qué es mejor que programar todo el flujo del Bot en Python directamente?
+- Según el flujo, ¿qué ocurre si la API de PyTorch devuelve una `confianza` menor a 0.65?
+- Nombra al menos 3 APIs o servicios con los que se comunica el orquestador durante una ejecución.
+
+### ⚫ Nivel 6 (Diseño y Futuro del Proyecto)
 - ¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?
 - ¿Por qué se eligieron los hiperparámetros actuales (`IMG_SIZE=64`, `BATCH_SIZE=32`, `EPOCHS=10`) y qué pasaría si los alteramos drásticamente?
 - Si tuvieras más tiempo para entrenar, ¿qué otros hiperparámetros agregarías o tunearías para mejorar la precisión?
 - Más allá del código actual, ¿qué otras mejoras arquitectónicas le harías al proyecto para llevarlo a un entorno 100% profesional?
 
 > [!TIP]
-> Para la disertación: domina **Niveles 1 al 3** para explicar con fluidez. Prepara **3.5** para preguntas del evaluador. **4 y 5** son para casos donde el profe profundiza mucho.
+> Para la disertación: domina **Niveles 1 al 3** y el **Nivel 5 (Orquestador)** para explicar con fluidez el ecosistema completo. Prepara **3.5** para preguntas del evaluador. **4 y 6** son para casos donde el profesor profundice mucho.
