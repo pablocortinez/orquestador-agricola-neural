@@ -22,7 +22,7 @@
 
 ## ⚪ Nivel 0 — Diccionario de Conceptos Básicos (Analogías)
 
-Antes de ver cómo funciona el código, necesitas entender 9 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
+Antes de ver cómo funciona el código, necesitas entender 13 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
 
 | Concepto Técnico | Analogía Agrícola | Definición Simple |
 |---|---|---|
@@ -35,6 +35,10 @@ Antes de ver cómo funciona el código, necesitas entender 9 palabras clave de I
 | **Learning Rate** | El tamaño del paso | Qué tan rápido dejamos que la red cambie de opinión tras un error. Si es muy grande, se vuelve inestable; si es muy chico, el entrenamiento no termina nunca. |
 | **Inferencia** | Trabajar solo en el campo | Cuando el entrenamiento termina y por fin usamos el modelo para analizar fotos nuevas enviadas por el agricultor. |
 | **Overfitting** | Memorizar sin entender | El peor defecto de la IA: cuando el modelo se memoriza las fotos del entrenamiento a la perfección, pero si le pasas la foto de otro huerto distinto, falla horriblemente. |
+| **Filtro Convolucional** | La lupa especializada | Una cuadrícula matemática que recorre la foto buscando características muy específicas, como cambios bruscos de color, bordes o manchas. |
+| **Función de Activación** | El interruptor de luz | Decide si la información que encontró la lupa es lo suficientemente importante (se "enciende") como para dejarla pasar a la siguiente capa. |
+| **Optimizador (ej. Adam)** | El GPS | El algoritmo que guía a la red paso a paso, indicándole exactamente en qué dirección debe cambiar sus pesos para equivocarse menos. |
+| **Desbalance de Clases** | El huerto disparejo | El problema de enseñarle a la red 1000 fotos de Tizón pero solo 100 fotos Sanas. La red se acostumbra a predecir "Tizón" solo por estadística. |
 
 ---
 
