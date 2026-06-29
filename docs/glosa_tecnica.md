@@ -22,7 +22,7 @@
 
 ## ⚪ Nivel 0 — Diccionario de Conceptos Básicos (Analogías)
 
-Antes de ver cómo funciona el código, necesitas entender 13 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
+Antes de ver cómo funciona el código, necesitas entender 17 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
 
 | Concepto Técnico | Analogía Agrícola | Definición Simple |
 |---|---|---|
@@ -39,6 +39,10 @@ Antes de ver cómo funciona el código, necesitas entender 13 palabras clave de 
 | **Función de Activación** | El interruptor de luz | Decide si la información que encontró la lupa es lo suficientemente importante (se "enciende") como para dejarla pasar a la siguiente capa. |
 | **Optimizador (ej. Adam)** | El GPS | El algoritmo que guía a la red paso a paso, indicándole exactamente en qué dirección debe cambiar sus pesos para equivocarse menos. |
 | **Desbalance de Clases** | El huerto disparejo | El problema de enseñarle a la red 1000 fotos de Tizón pero solo 100 fotos Sanas. La red se acostumbra a predecir "Tizón" solo por estadística. |
+| **Pooling (MaxPool)** | El resumen ejecutivo | La acción de achicar la imagen quedándose solo con los píxeles más importantes (los más brillantes o fuertes) para ahorrar memoria. |
+| **Flatten (Aplanado)** | Desarmar el rompecabezas | Convertir la cuadrícula de la foto en una sola línea larga de números para que el clasificador final pueda leerla de una vez. |
+| **Backpropagation** | Repartir la culpa | El proceso matemático de enviar el error desde el final hasta el principio de la red para que cada capa ajuste sus propios pesos. |
+| **Capa Densa (MLP)** | El comité de decisiones | La última parte de la red. Toma todo lo que encontraron las lupas (filtros) y decide, votando, a qué enfermedad pertenece la foto. |
 
 ---
 
