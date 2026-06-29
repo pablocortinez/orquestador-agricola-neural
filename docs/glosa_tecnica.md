@@ -665,8 +665,8 @@ Un MLP aplanaría la imagen inmediatamente, destruyendo la relación espacial (e
 Fueron elegidos por ser un compromiso entre precisión y costo computacional (entrenable en CPU de un laptop). Si usamos IMG_SIZE=224, colapsaría la memoria sin GPU. Si usamos EPOCHS=100 en un dataset tan chico, la red se memorizaría las fotos (Overfitting).
 </details>
 
-<details><summary>Si tuvieras más tiempo, ¿qué técnica usarías para mitigar el desbalance de clases (152 Sanas vs 1000 Enfermas)?</summary>
-Usaría un <code>WeightedRandomSampler</code> en el DataLoader, que obliga a PyTorch a extraer con más probabilidad fotos de la clase minoritaria (Sana) en cada batch, o utilizaría funciones de pérdida con pesos (Weighted Cross Entropy).
+<details><summary>¿Qué riesgo estadístico corremos al entrenar con un desbalance de clases tan severo (1000 Enfermas vs 152 Sanas) y cómo lo mitigarías?</summary>
+El riesgo principal es el **sesgo estadístico**. La red podría adoptar un comportamiento "perezoso", aprendiendo a predecir siempre una enfermedad solo por probabilidad estadística, perdiendo la capacidad de distinguir sutilmente una hoja sana. Para mitigarlo, usaría dos enfoques: 1) A nivel de Datos: aplicaría técnicas de *Data Augmentation* (rotar y voltear las 152 fotos sanas) para multiplicarlas artificialmente. 2) A nivel de Código: usaría un `WeightedRandomSampler` en PyTorch, forzando al DataLoader a extraer imágenes sanas con mayor probabilidad matemática durante el entrenamiento.
 </details>
 
 <details><summary>Más allá del código actual, ¿qué mejora arquitectónica le harías a la CNN para reducir sus parámetros (peso en MB)?</summary>
