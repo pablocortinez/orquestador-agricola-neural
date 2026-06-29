@@ -22,7 +22,7 @@
 
 ## ⚪ Nivel 0 — Diccionario de Conceptos Básicos (Analogías)
 
-Antes de ver cómo funciona el código, necesitas entender 17 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
+Antes de ver cómo funciona el código, necesitas entender 20 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
 
 | Concepto Técnico | Analogía Agrícola | Definición Simple |
 |---|---|---|
@@ -43,6 +43,9 @@ Antes de ver cómo funciona el código, necesitas entender 17 palabras clave de 
 | **Flatten (Aplanado)** | Desarmar el rompecabezas | Convertir la cuadrícula de la foto en una sola línea larga de números para que el clasificador final pueda leerla de una vez. |
 | **Backpropagation** | Repartir la culpa | El proceso matemático de enviar el error desde el final hasta el principio de la red para que cada capa ajuste sus propios pesos. |
 | **Capa Densa (MLP)** | El comité de decisiones | La última parte de la red. Toma todo lo que encontraron las lupas (filtros) y decide, votando, a qué enfermedad pertenece la foto. |
+| **Normalización** | Nivelar el terreno | Poner todos los colores de la foto en la misma escala (-1 a 1) para que a la red no le cueste trabajo procesar fotos muy oscuras o muy brillantes. |
+| **Softmax** | El porcentaje de seguridad | Transforma el veredicto final de la red en porcentajes del 0 al 100% que suman exactamente 100 (ej: 90% Tizón, 8% Sana, 2% Oídio). |
+| **CPU vs GPU** | Un experto vs Un batallón | La CPU es inteligente pero trabaja sola (lenta para entrenar). La GPU son miles de trabajadores básicos en paralelo (hace las multiplicaciones matemáticas rapidísimo). |
 
 ---
 
