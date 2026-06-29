@@ -75,6 +75,26 @@ Un agricultor tiene una planta enferma. Toma una foto con el celular. El sistema
 
 ---
 
+
+### 📝 Auto-Evaluación (Nivel 1)
+<details><summary>¿Cuáles son las 3 clases que el modelo puede distinguir y cómo se ven visualmente?</summary>
+Planta_Sana (verde uniforme), Tizon_Tardio_Papa (manchas marrones oscuras) y Oidio_Vid (polvo blanco en la hoja).
+</details>
+
+<details><summary>¿Cuál es el rol de Gemini en el sistema?</summary>
+Cruza el diagnóstico visual de la CNN con los datos climáticos actuales de la zona para recomendar un tratamiento agronómico contextualizado y seguro (ej. no sugerir químicos de contacto si llueve).
+</details>
+
+<details><summary>¿Qué pasa si se pierde el archivo <code>modelo_vision.pth</code>?</summary>
+El sistema de inferencia falla porque la red neuronal se queda "vacía", sin los pesos (experiencia) aprendidos durante el entrenamiento. Habría que entrenarla desde cero de nuevo.
+</details>
+
+<details><summary>¿Por qué el sistema usa Gemini si ya tiene una Red Neuronal (CNN) para analizar la foto?</summary>
+La CNN solo es experta en "ver" e identificar la enfermedad, pero no sabe nada de agronomía ni clima. Gemini actúa como el "agrónomo experto" que le da valor real al agricultor recomendando qué hacer a continuación.
+</details>
+
+---
+
 ## 🟢🟡 Nivel 1.5 — El sistema por dentro, sin fórmulas
 
 **Introduces los nombres correctos sin entrar en matemáticas.**
@@ -98,6 +118,25 @@ data/
   Tizon_Tardio_Papa/ ← ~1000 fotos de hojas con Tizón
 ```
 
+
+### 📝 Auto-Evaluación (Nivel 6)
+<details><summary>¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?</summary>
+Un MLP aplanaría la imagen inmediatamente, destruyendo la relación espacial (el píxel de arriba no tendría relación con el de abajo). La CNN usa filtros 2D que deslizan por la foto, preservando la geometría y buscando patrones locales como manchas y bordes.
+</details>
+
+<details><summary>¿Por qué se eligieron los hiperparámetros actuales (IMG_SIZE=64, BATCH_SIZE=32, EPOCHS=10) y qué pasaría si los alteramos drásticamente?</summary>
+Fueron elegidos por ser un compromiso entre precisión y costo computacional (entrenable en CPU de un laptop). Si usamos IMG_SIZE=224, colapsaría la memoria sin GPU. Si usamos EPOCHS=100 en un dataset tan chico, la red se memorizaría las fotos (Overfitting).
+</details>
+
+<details><summary>Si tuvieras más tiempo, ¿qué técnica usarías para mitigar el desbalance de clases (152 Sanas vs 1000 Enfermas)?</summary>
+Usaría un <code>WeightedRandomSampler</code> en el DataLoader, que obliga a PyTorch a extraer con más probabilidad fotos de la clase minoritaria (Sana) en cada batch, o utilizaría funciones de pérdida con pesos (Weighted Cross Entropy).
+</details>
+
+<details><summary>Más allá del código actual, ¿qué mejora arquitectónica le harías a la CNN para reducir sus parámetros (peso en MB)?</summary>
+Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera capa densa tiene más de 500,000 parámetros. Al hacer pooling global, promediamos cada canal reduciendo los parámetros drásticamente sin perder precisión, haciendo el modelo mucho más ligero.
+</details>
+
+
 > [!TIP]
 > **El diseño de "Planta_Sana":** El script `preparar_dataset.py` construye esta clase combinando hojas sanas de papa, tomate y pimiento. Es un concepto clave de Deep Learning: si usáramos solo papa sana, la red podría memorizar que "sano = forma de hoja de papa". Al mezclar especies, obligamos a la red a extraer patrones reales de "salud" (color uniforme, sin manchas) ignorando la forma de la hoja.
 
@@ -112,6 +151,26 @@ Cuando el agricultor sube una foto, `api_vision.py` sigue estos pasos:
 3. La pasa por el modelo → obtiene 3 scores, uno por enfermedad
 4. Selecciona la enfermedad con el score más alto
 5. Responde con un JSON: `{"diagnostico": "Oidio_Vid", "confianza": 0.92}`
+
+---
+
+
+### 📝 Auto-Evaluación (Nivel 1.5)
+<details><summary>¿Qué diferencia hay entre entrenamiento e inferencia?</summary>
+En el entrenamiento, el modelo aprende ajustando sus parámetros usando miles de ejemplos (toma mucho tiempo y recursos). En la inferencia, el modelo ya no aprende, solo aplica lo aprendido a fotos nuevas para dar una respuesta rápida.
+</details>
+
+<details><summary>¿Por qué la clase <code>Planta_Sana</code> mezcla hojas de papa, tomate y pimiento en lugar de usar solo una?</summary>
+Para evitar sesgos. Si usáramos solo papa, la red podría aprender que "sano" significa "tener forma de hoja de papa". Al mezclar especies, la forzamos a aprender características reales de salud (color verde, sin manchas).
+</details>
+
+<details><summary>¿Qué significa que exista "desbalance de clases" en este dataset?</summary>
+Significa que hay muchas más imágenes de enfermedades (1000 de Oídio y 1000 de Tizón) que de plantas sanas (152). Esto puede causar que el modelo se acostumbre a predecir "enfermo" más a menudo de lo que debería.
+</details>
+
+<details><summary>¿Qué contiene el JSON que responde <code>api_vision.py</code>?</summary>
+Contiene el <code>diagnostico</code> (la clase con mayor probabilidad) y la <code>confianza</code> (un porcentaje entre 0 y 1 indicando qué tan seguro está el modelo).
+</details>
 
 ---
 
@@ -153,6 +212,26 @@ FOTO (64×64 píxeles, 3 canales RGB)
 ### ¿Qué guarda `modelo_vision.pth`?
 
 Guarda todos los **pesos** (valores numéricos) que los filtros y el clasificador aprendieron durante el entrenamiento. Son los ~529,635 números que definen exactamente qué busca cada filtro. Sin este archivo, la red existe como estructura vacía pero no sabe hacer nada.
+
+---
+
+
+### 📝 Auto-Evaluación (Nivel 2)
+<details><summary>¿Qué detecta el Bloque Conv 1 vs el Bloque Conv 2?</summary>
+Conv 1 actúa como una lupa básica que detecta características simples como bordes, líneas o cambios bruscos de color. Conv 2 toma esos bordes y los combina para detectar patrones complejos como las manchas redondas del Tizón o la textura del Oídio.
+</details>
+
+<details><summary>En tu arquitectura usas MaxPooling. ¿Por qué se "achica" la imagen espacialmente?</summary>
+Se achica para condensar la información más importante, reducir el costo computacional (menos píxeles que procesar) y darle a la red "invarianza espacial" (poder detectar una mancha sin importar si está arriba o abajo en la foto).
+</details>
+
+<details><summary>¿Por qué aumentan las "versiones" (canales) de la imagen a medida que avanzamos?</summary>
+Porque en cada paso queremos buscar más características. Pasamos de 3 colores RGB a 16 filtros de patrones, y luego a 32 filtros, permitiendo que la red extraiga información cada vez más rica.
+</details>
+
+<details><summary>¿Para qué sirve el aplanado (flatten)?</summary>
+Convierte la matriz 2D de píxeles (que viene de las convoluciones) en una sola fila larga (1D) de 8192 números, para que pueda ser inyectada en la red densa (MLP) final que toma la decisión.
+</details>
 
 ---
 
@@ -207,6 +286,22 @@ En vez de procesar una foto a la vez, el **DataLoader** agrupa 32 fotos en un **
 
 ---
 
+
+### 📝 Auto-Evaluación (Nivel 2.5)
+<details><summary>¿Qué shape tiene el tensor después de <code>pool2</code>? ¿Cómo se calcula 8192?</summary>
+El shape es <code>[32, 32, 16, 16]</code> (32 imágenes, 32 canales, de 16x16 píxeles cada una). El 8192 sale de multiplicar los canales por los píxeles: <code>32 × 16 × 16 = 8192</code>.
+</details>
+
+<details><summary>¿Por qué se procesan 32 fotos juntas (un batch) y no una a la vez?</summary>
+Porque es mucho más rápido al usar operaciones matemáticas matriciales en paralelo, y porque promediar el error de 32 fotos a la vez hace que el ajuste de la red (los gradientes) sea mucho más estable que si se ajustara foto por foto.
+</details>
+
+<details><summary>¿Qué capa tiene el 99% de los parámetros y por qué?</summary>
+La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta los 8192 valores del flattened tensor con 64 neuronas, requiere <code>8192 × 64 = 524,288</code> pesos individuales (conexiones).
+</details>
+
+---
+
 ## 🟠 Nivel 3 — Cómo aprende la red
 
 **El ciclo de entrenamiento con analogías.**
@@ -249,6 +344,22 @@ Es el "puntaje de equivocación". Si la red dice "Planta_Sana" cuando era Tizón
 ### Inferencia: sin aprendizaje
 
 En producción (`api_vision.py`) **no hay entrenamiento**. La red solo hace el paso hacia adelante una vez y devuelve el resultado. Es mucho más rápido porque no necesita calcular los gradientes.
+
+---
+
+
+### 📝 Auto-Evaluación (Nivel 3)
+<details><summary>Nombra los 5 pasos de cada iteración de entrenamiento en orden.</summary>
+1. Limpiar gradientes (zero_grad), 2. Calcular predicción (forward), 3. Calcular error (loss), 4. Calcular gradientes (backward), 5. Actualizar pesos (step).
+</details>
+
+<details><summary>¿Cuántas actualizaciones totales ocurren con EPOCHS=10 y BATCH_SIZE=32?</summary>
+Con ~2000 fotos divididas en batches de 32, tenemos ~63 batches por época. 63 batches × 10 épocas = ~630 actualizaciones en total.
+</details>
+
+<details><summary>¿Qué significa en la práctica que el loss baje de 2.1 a 0.3?</summary>
+Significa que la red pasó de estar "adivinando al azar y equivocándose mucho" (Loss 2.1) a "predecir casi siempre la clase correcta con mucha confianza" (Loss 0.3).
+</details>
 
 ---
 
@@ -304,11 +415,37 @@ Durante inferencia no se necesita calcular gradientes (no hay backpropagation). 
 
 ---
 
+
+### 📝 Auto-Evaluación (Nivel 3.5)
+<details><summary>¿Qué es un gradiente y en qué dirección modifica un peso?</summary>
+Es la magnitud y dirección que indica cómo cambia el error (Loss) si modificas un peso. Si el gradiente es positivo (subiendo), el peso debe disminuir (dar un paso atrás). Si es negativo (bajando), el peso debe aumentar.
+</details>
+
+<details><summary>¿Por qué se llama <code>optimizer.zero_grad()</code> antes de cada backward?</summary>
+Porque PyTorch por defecto acumula (suma) los gradientes en cada iteración. Si no los limpiamos a cero al inicio del batch, el nuevo gradiente se sumaría al del batch anterior, arruinando la actualización de pesos.
+</details>
+
+<details><summary>¿Qué diferencia hay entre <code>model.train()</code> y <code>model.eval()</code>?</summary>
+<code>model.train()</code> prepara la red para aprender, activando el cálculo de gradientes y capas como Dropout si existieran. <code>model.eval()</code> "congela" la red para hacer predicciones, desactivando Dropout para que la respuesta sea siempre determinista.
+</details>
+
+<details><summary>¿Qué hace <code>torch.no_grad()</code> y por qué se usa en inferencia?</summary>
+Le dice a PyTorch que apague el motor que registra las operaciones para calcular derivadas (grafo computacional). Esto se usa en inferencia porque no vamos a actualizar pesos, ahorrando un 50% de memoria y haciendo el cálculo más rápido.
+</details>
+
+---
+
 ## 🔴 Nivel 4 — Fundamentos matemáticos y decisiones de diseño
 
 **El "por qué" detrás de cada decisión técnica.**
 
 ### ¿Por qué ReLU y no Sigmoid?
+
+| Característica | Sigmoid (Antiguo) | ReLU (Moderno) |
+|---|---|---|
+| **Efecto en el gradiente** | Lo reduce drásticamente (máx 25% por capa) | Lo mantiene intacto (100%) si es positivo |
+| **Problema principal** | *Vanishing Gradient*: las primeras capas no aprenden | *Dying ReLU*: algunas neuronas pueden "morir" (aquí no es grave) |
+| **Velocidad de cálculo** | Lenta (exponenciales) | Muy rápida (max(0, x)) |
 
 **Vanishing Gradient Problem:** en redes con múltiples capas, los gradientes se multiplican por la derivada de la activación en cada capa hacia atrás.
 
@@ -319,6 +456,12 @@ Durante inferencia no se necesita calcular gradientes (no hay backpropagation). 
 
 ### ¿Por qué Adam y no SGD puro?
 
+| Característica | SGD (Descenso de Gradiente Estocástico) | Adam (Adaptive Moment Estimation) |
+|---|---|---|
+| **Learning Rate (lr)** | El mismo para todos los pesos | Ajustado dinámicamente para cada peso individual |
+| **Memoria (Momentum)** | No (en su forma pura) | Sí, recuerda gradientes pasados para no estancarse |
+| **Velocidad de convergencia**| Lenta, requiere miles de épocas | Muy rápida, ideal para entrenamientos cortos (como nuestras 10 épocas) |
+
 SGD: `w = w - lr × ∂L/∂w` (mismo lr para todos)
 
 Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
@@ -328,6 +471,11 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 **Resultado:** con solo 630 actualizaciones disponibles, Adam converge donde SGD todavía está calentando.
 
 ### ¿Por qué CrossEntropyLoss y no MSE?
+
+| Función de Pérdida | Uso Principal | Cómo penaliza el error |
+|---|---|---|
+| **MSE (Mean Squared Error)** | Regresión (predecir números continuos, ej. precio de una casa) | Error al cuadrado (suave) |
+| **CrossEntropyLoss** | Clasificación (predecir etiquetas, ej. clases de plantas) | Logarítmico (castigo extremo si está confiado y equivocado) |
 
 MSE es para regresión (valores continuos). Para clasificación, la "respuesta correcta" es una etiqueta discreta (0, 1 o 2). CrossEntropyLoss está diseñada para probabilidades: penaliza exponencialmente cuando el modelo está muy confiado pero equivocado.
 
@@ -367,6 +515,26 @@ PIL [H, W, 3]  →  Resize  →  PIL [64, 64, 3]
 
 ---
 
+
+### 📝 Auto-Evaluación (Nivel 4)
+<details><summary>¿Por qué ReLU mitiga el vanishing gradient y Sigmoid no?</summary>
+Porque la derivada (el gradiente) de Sigmoid nunca es mayor a 0.25, por lo que el error se achica (se desvanece) al multiplicarse capa tras capa hacia atrás. ReLU, para números positivos, tiene una derivada de 1, transmitiendo el error al 100% sin que se pierda.
+</details>
+
+<details><summary>¿Por qué Adam converge más rápido que SGD puro con pocas actualizaciones?</summary>
+Porque Adam recuerda los gradientes de los pasos anteriores (Momentum) y ajusta el tamaño del paso (Learning Rate) independientemente para cada peso. SGD usa el mismo paso fijo y ciego para todo, tardando mucho más en encontrar el camino al mínimo.
+</details>
+
+<details><summary>¿Por qué <code>CLASS_NAMES</code> debe estar obligatoriamente en orden alfabético?</summary>
+Porque la clase <code>ImageFolder</code> de PyTorch (que usamos para cargar las fotos) asigna los índices numéricos 0, 1, 2 a las carpetas en estricto orden alfabético. Si nuestro código no respeta ese orden, cruzaremos las etiquetas al predecir.
+</details>
+
+<details><summary>¿Qué pasaría si <code>IMG_SIZE=128</code> en entrenamiento y <code>64</code> en inferencia?</summary>
+El código de inferencia daría error ("Shape mismatch") en la capa Densa (fc1). Los filtros convolucionales achicarían una imagen de 128x128 a una matriz de 32x32, generando 32,768 valores en el flatten, pero la red fue entrenada para recibir exactamente 8192.
+</details>
+
+---
+
 ## 🟣 Nivel 5 — La Orquestación (n8n y Telegram)
 
 **Objetivo:** Entender cómo se conectan los distintos servicios (APIs) en un flujo automatizado sin código, creando el ecosistema completo del proyecto.
@@ -390,6 +558,22 @@ Basado en el archivo `n8n_workflow_telegram_ubicacion.json`, el flujo exacto de 
 6. **Respuesta Telegram:** Envía el veredicto final, redactado por Gemini, de vuelta al celular del usuario.
 
 Con esto se logra una arquitectura limpia de **3 capas desacopladas**: UI (Telegram) ↔ Orquestador (n8n) ↔ Modelos Especializados (CNN PyTorch + Gemini).
+
+---
+
+
+### 📝 Auto-Evaluación (Nivel 5)
+<details><summary>¿Qué rol cumple n8n en la arquitectura y por qué es mejor que programar todo el Bot en Python directamente?</summary>
+Actúa como Orquestador Visual. Permite conectar APIs (Telegram, FastAPI, OpenWeather, Gemini) sin tener que escribir código enrutador. Es mucho más mantenible, escalable y fácil de modificar si mañana quieres agregar WhatsApp en lugar de Telegram.
+</details>
+
+<details><summary>Según tu lógica de negocio, ¿qué ocurre si la API de PyTorch devuelve una <code>confianza</code> menor a 0.65?</summary>
+El prompt de Gemini está configurado para leer esa confianza. Si es menor a 0.65, en vez de recomendar un tratamiento basado en una predicción dudosa, le dirá al usuario que la foto no es concluyente y le pedirá que suba una imagen más clara.
+</details>
+
+<details><summary>Nombra al menos 3 APIs o servicios con los que se comunica el orquestador durante una ejecución.</summary>
+1) La API de Telegram (para recibir/enviar el chat), 2) La API de PyTorch Local (FastAPI) para el diagnóstico visual, 3) OpenWeather API (para el clima), y 4) Google Gemini API (para redactar el tratamiento experto).
+</details>
 
 ---
 
@@ -467,99 +651,3 @@ graph LR
 
 ---
 
-## 📝 Preguntas de Auto-Evaluación
-
-### 🟢 Nivel 1
-<details><summary>¿Cuáles son las 3 clases que el modelo puede distinguir y cómo se ven visualmente?</summary>
-Planta_Sana (verde uniforme), Tizon_Tardio_Papa (manchas marrones oscuras) y Oidio_Vid (polvo blanco en la hoja).
-</details>
-
-<details><summary>¿Cuál es el rol de Gemini en el sistema?</summary>
-Cruza el diagnóstico visual de la CNN con los datos climáticos actuales de la zona para recomendar un tratamiento agronómico contextualizado y seguro (ej. no sugerir químicos de contacto si llueve).
-</details>
-
-<details><summary>¿Qué pasa si se pierde el archivo <code>modelo_vision.pth</code>?</summary>
-El sistema de inferencia falla porque la red neuronal se queda "vacía", sin los pesos (experiencia) aprendidos durante el entrenamiento. Habría que entrenarla desde cero de nuevo.
-</details>
-
-<details><summary>¿Por qué el sistema usa Gemini si ya tiene una Red Neuronal (CNN) para analizar la foto?</summary>
-La CNN solo es experta en "ver" e identificar la enfermedad, pero no sabe nada de agronomía ni clima. Gemini actúa como el "agrónomo experto" que le da valor real al agricultor recomendando qué hacer a continuación.
-</details>
-
-### 🟢🟡 Nivel 1.5
-<details><summary>¿Qué diferencia hay entre entrenamiento e inferencia?</summary>
-En el entrenamiento, el modelo aprende ajustando sus parámetros usando miles de ejemplos (toma mucho tiempo y recursos). En la inferencia, el modelo ya no aprende, solo aplica lo aprendido a fotos nuevas para dar una respuesta rápida.
-</details>
-
-<details><summary>¿Por qué la clase <code>Planta_Sana</code> mezcla hojas de papa, tomate y pimiento en lugar de usar solo una?</summary>
-Para evitar sesgos. Si usáramos solo papa, la red podría aprender que "sano" significa "tener forma de hoja de papa". Al mezclar especies, la forzamos a aprender características reales de salud (color verde, sin manchas).
-</details>
-
-<details><summary>¿Qué significa que exista "desbalance de clases" en este dataset?</summary>
-Significa que hay muchas más imágenes de enfermedades (1000 de Oídio y 1000 de Tizón) que de plantas sanas (152). Esto puede causar que el modelo se acostumbre a predecir "enfermo" más a menudo de lo que debería.
-</details>
-
-<details><summary>¿Qué contiene el JSON que responde <code>api_vision.py</code>?</summary>
-Contiene el <code>diagnostico</code> (la clase con mayor probabilidad) y la <code>confianza</code> (un porcentaje entre 0 y 1 indicando qué tan seguro está el modelo).
-</details>
-
-### 🟡 Nivel 2
-<details><summary>¿Qué detecta el Bloque Conv 1 vs el Bloque Conv 2?</summary>
-Conv 1 actúa como una lupa básica que detecta características simples como bordes, líneas o cambios bruscos de color. Conv 2 toma esos bordes y los combina para detectar patrones complejos como las manchas redondas del Tizón o la textura del Oídio.
-</details>
-
-<details><summary>En tu arquitectura usas MaxPooling. ¿Por qué se "achica" la imagen espacialmente?</summary>
-Se achica para condensar la información más importante, reducir el costo computacional (menos píxeles que procesar) y darle a la red "invarianza espacial" (poder detectar una mancha sin importar si está arriba o abajo en la foto).
-</details>
-
-<details><summary>¿Por qué aumentan las "versiones" (canales) de la imagen a medida que avanzamos?</summary>
-Porque en cada paso queremos buscar más características. Pasamos de 3 colores RGB a 16 filtros de patrones, y luego a 32 filtros, permitiendo que la red extraiga información cada vez más rica.
-</details>
-
-<details><summary>¿Para qué sirve el aplanado (flatten)?</summary>
-Convierte la matriz 2D de píxeles (que viene de las convoluciones) en una sola fila larga (1D) de 8192 números, para que pueda ser inyectada en la red densa (MLP) final que toma la decisión.
-</details>
-
-### 🟡🟠 Nivel 2.5
-<details><summary>¿Qué shape tiene el tensor después de <code>pool2</code>? ¿Cómo se calcula 8192?</summary>
-El shape es <code>[32, 32, 16, 16]</code> (32 imágenes, 32 canales, de 16x16 píxeles cada una). El 8192 sale de multiplicar los canales por los píxeles: <code>32 × 16 × 16 = 8192</code>.
-</details>
-
-<details><summary>¿Por qué se procesan 32 fotos juntas (un batch) y no una a la vez?</summary>
-Porque es mucho más rápido al usar operaciones matemáticas matriciales en paralelo, y porque promediar el error de 32 fotos a la vez hace que el ajuste de la red (los gradientes) sea mucho más estable que si se ajustara foto por foto.
-</details>
-
-<details><summary>¿Qué capa tiene el 99% de los parámetros y por qué?</summary>
-La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta los 8192 valores del flattened tensor con 64 neuronas, requiere <code>8192 × 64 = 524,288</code> pesos individuales (conexiones).
-</details>
-
-### 🟠 Nivel 3
-- Nombra los 5 pasos de cada iteración de entrenamiento en orden.
-- ¿Cuántas actualizaciones totales ocurren con EPOCHS=10, BATCH_SIZE=32?
-- ¿Qué significa que el loss baje de 2.1 a 0.3?
-
-### 🟠🔴 Nivel 3.5
-- ¿Qué es un gradiente y en qué dirección modifica un peso?
-- ¿Por qué se llama `optimizer.zero_grad()` antes de cada backward?
-- ¿Qué diferencia hay entre `model.train()` y `model.eval()`?
-- ¿Qué hace `torch.no_grad()` y por qué se usa en inferencia?
-
-### 🔴 Nivel 4
-- ¿Por qué ReLU mitiga el vanishing gradient y Sigmoid no?
-- ¿Por qué Adam converge más rápido que SGD con pocas actualizaciones?
-- ¿Por qué `CLASS_NAMES` debe estar en orden alfabético?
-- ¿Qué pasaría si `IMG_SIZE=128` en entrenamiento y `64` en inferencia?
-
-### 🟣 Nivel 5 (Orquestación n8n)
-- ¿Qué rol cumple `n8n` en la arquitectura y por qué es mejor que programar todo el flujo del Bot en Python directamente?
-- Según el flujo, ¿qué ocurre si la API de PyTorch devuelve una `confianza` menor a 0.65?
-- Nombra al menos 3 APIs o servicios con los que se comunica el orquestador durante una ejecución.
-
-### ⚫ Nivel 6 (Diseño y Futuro del Proyecto)
-- ¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?
-- ¿Por qué se eligieron los hiperparámetros actuales (`IMG_SIZE=64`, `BATCH_SIZE=32`, `EPOCHS=10`) y qué pasaría si los alteramos drásticamente?
-- Si tuvieras más tiempo para entrenar, ¿qué otros hiperparámetros agregarías o tunearías para mejorar la precisión?
-- Más allá del código actual, ¿qué otras mejoras arquitectónicas le harías al proyecto para llevarlo a un entorno 100% profesional?
-
-> [!TIP]
-> Para la disertación: domina **Niveles 1 al 3** y el **Nivel 5 (Orquestador)** para explicar con fluidez el ecosistema completo. Prepara **3.5** para preguntas del evaluador. **4 y 6** son para casos donde el profesor profundice mucho.
