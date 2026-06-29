@@ -1,0 +1,297 @@
+{
+  "name": "Orquestador Agrícola - Bot Telegram v2 (Ubicación Dinámica)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "tg-trigger-v2",
+      "name": "Telegram: Recibe Mensaje",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [ -200, 300 ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      },
+      "webhookId": "agricola-ubicacion-trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "is-start",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-is-start",
+      "name": "IF: ¿Es /start?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 0, 300 ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "🌿 Hola! Soy FitoScanAI, tu agrónomo digital.\n\nEnvíame una foto de una planta y te diré qué enfermedad tiene junto con el tratamiento recomendado.\n\nPara usar el clima de tu zona, toca el botón 👇",
+        "additionalFields": {
+          "replyMarkup": "replyKeyboardMarkup",
+          "replyKeyboardMarkup": {
+            "values": {
+              "rows": [
+                {
+                  "row": [
+                    {
+                      "text": "📍 Compartir mi ubicación",
+                      "requestContact": false,
+                      "requestLocation": true
+                    }
+                  ]
+                },
+                {
+                  "row": [
+                    {
+                      "text": "Continuar con Santiago",
+                      "requestContact": false,
+                      "requestLocation": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "resizeKeyboard": true,
+            "oneTimeKeyboard": true,
+            "selective": false
+          }
+        }
+      },
+      "id": "tg-bienvenida",
+      "name": "Telegram: Bienvenida",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [ 200, 100 ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-location",
+              "leftValue": "={{ $json.message.location }}",
+              "rightValue": "",
+              "operator": { "type": "object", "operation": "exists", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-location",
+      "name": "IF: ¿Tiene ubicación?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $input.item.json.message;\nconst chatId = msg.chat.id;\nconst lat = msg.location.latitude;\nconst lon = msg.location.longitude;\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData[`loc_${chatId}`] = { lat, lon };\n\nreturn [{ json: { chatId, lat, lon } }];"
+      },
+      "id": "code-save-loc",
+      "name": "Guardar Ubicación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 400, 200 ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ `📍 Ubicación guardada. Ahora envíame una foto de la planta y usaré el clima real de tu zona. 🌱` }}",
+        "additionalFields": {
+          "replyMarkup": "replyKeyboardRemove",
+          "replyKeyboardRemove": {
+            "selective": false
+          }
+        }
+      },
+      "id": "tg-confirma-loc",
+      "name": "Telegram: Confirma Ubicación",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [ 600, 200 ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-photo",
+              "leftValue": "={{ $json.message.photo }}",
+              "rightValue": "",
+              "operator": { "type": "object", "operation": "exists", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-photo",
+      "name": "IF: ¿Tiene foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 400, 400 ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram: Recibe Mensaje').item.json.message.photo[$('Telegram: Recibe Mensaje').item.json.message.photo.length - 1].file_id }}"
+      },
+      "id": "tg-getfile-v2",
+      "name": "Telegram: Descarga Foto",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [ 600, 400 ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/predecir_muestra",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "form-data-binary",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-cnn-v2",
+      "name": "CNN Inferencia (FastAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 800, 400 ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q",     "value": "Santiago" },
+            { "name": "appid", "value": "TU_OPENWEATHERMAP_KEY" },
+            { "name": "units", "value": "metric" },
+            { "name": "lang",  "value": "es" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "code-clima-v2",
+      "name": "API Clima (OpenWeather)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 1000, 400 ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "options": {},
+        "prompt": "Eres un agrónomo experto. Un agricultor te envió una foto por Telegram y la IA la analizó.\n\nDiagnóstico CNN: {{$node[\"CNN Inferencia (FastAPI)\"].json[\"diagnostico\"]}}\nConfianza: {{$node[\"CNN Inferencia (FastAPI)\"].json[\"confianza\"]}}\nTemperatura: {{$json[\"main\"][\"temp\"]}}°C | Clima: {{$json[\"weather\"][0][\"description\"]}} | Humedad: {{$json[\"main\"][\"humidity\"]}}%\n\nClases posibles: Arana_Roja_Tomate, Mancha_Bact_Pimiento, Mancha_Bact_Tomate, Mancha_Diana_Tomate, Moho_Foliar_Tomate, Mosaico_Tomate, Oidio_Vid, Planta_Sana, Septoria_Tomate, Tizon_Tardio_Papa, Tizon_Tardio_Tomate, Tizon_Temprano_Papa, Tizon_Temprano_Tomate, Virus_Rizo_Tomate.\n\nResponde según la confianza:\n- >= 0.80: diagnóstico definitivo + nombre de la enfermedad en lenguaje natural + tratamiento específico + consideración climática relevante.\n- 0.65-0.79: diagnóstico tentativo, sugiere confirmar con inspección visual, da recomendación general.\n- < 0.65: imagen poco clara, pide otra foto con mejor iluminación. Solo comenta el clima brevemente.\n\nReglas adicionales:\n- Si hay lluvia en el clima: NO recomendar pesticidas de contacto.\n- Si diagnostica Planta_Sana: felicita al agricultor y da un consejo preventivo según el clima.\n- Si diagnostica Mosaico_Tomate o Virus_Rizo_Tomate: aclara que no tiene cura química, recomendar eliminar plantas afectadas y controlar insectos vectores.\n\nEscribe en español. Máximo 8 líneas. Sin markdown, solo texto plano. Con emojis relevantes."
+      },
+      "id": "gemini-v2",
+      "name": "Agrónomo (Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [ 1200, 400 ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram: Recibe Mensaje').item.json.message.chat.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "id": "tg-send-v2",
+      "name": "Telegram: Envía Veredicto",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [ 1400, 400 ],
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram: Recibe Mensaje": {
+      "main": [ [ { "node": "IF: ¿Es /start?", "type": "main", "index": 0 } ] ]
+    },
+    "IF: ¿Es /start?": {
+      "main": [
+        [ { "node": "Telegram: Bienvenida",     "type": "main", "index": 0 } ],
+        [ { "node": "IF: ¿Tiene ubicación?",    "type": "main", "index": 0 } ]
+      ]
+    },
+    "IF: ¿Tiene ubicación?": {
+      "main": [
+        [ { "node": "Guardar Ubicación",         "type": "main", "index": 0 } ],
+        [ { "node": "IF: ¿Tiene foto?",          "type": "main", "index": 0 } ]
+      ]
+    },
+    "Guardar Ubicación": {
+      "main": [ [ { "node": "Telegram: Confirma Ubicación", "type": "main", "index": 0 } ] ]
+    },
+    "IF: ¿Tiene foto?": {
+      "main": [
+        [ { "node": "Telegram: Descarga Foto",   "type": "main", "index": 0 } ],
+        []
+      ]
+    },
+    "Telegram: Descarga Foto": {
+      "main": [ [ { "node": "CNN Inferencia (FastAPI)", "type": "main", "index": 0 } ] ]
+    },
+    "CNN Inferencia (FastAPI)": {
+      "main": [ [ { "node": "API Clima (OpenWeather)", "type": "main", "index": 0 } ] ]
+    },
+    "API Clima (OpenWeather)": {
+      "main": [ [ { "node": "Agrónomo (Gemini)", "type": "main", "index": 0 } ] ]
+    },
+    "Agrónomo (Gemini)": {
+      "main": [ [ { "node": "Telegram: Envía Veredicto", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

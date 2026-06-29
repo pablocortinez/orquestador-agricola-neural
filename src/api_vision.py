@@ -65,9 +65,9 @@ class AgricolaCNN(nn.Module):
         
         # ─── CLASIFICADOR MLP (Fully Connected) ───
         # Flatten: [B,32,16,16] → [B,8192]. fc1: 8192→64. fc2: 64→3.
-        self.fc1 = nn.Linear(32 * 16 * 16, 64)
+        self.fc1 = nn.Linear(32 * 16 * 16, 256)
         self.relu3 = nn.ReLU()
-        self.fc2 = nn.Linear(64, num_classes)
+        self.fc2 = nn.Linear(256, num_classes)
         
     def forward(self, x):
         """
@@ -98,7 +98,22 @@ class AgricolaCNN(nn.Module):
 #   Directorio "Tizon_Tardio_Papa" → índice 2
 # Si este orden no coincide, las predicciones se mostrarán con etiquetas cruzadas
 # (bug que ya fue corregido en la Sesión 2, ver SESION.md).
-CLASS_NAMES = ["Oidio_Vid", "Planta_Sana", "Tizon_Tardio_Papa"]
+CLASS_NAMES = [
+    "Arana_Roja_Tomate",
+    "Mancha_Bact_Pimiento",
+    "Mancha_Bact_Tomate",
+    "Mancha_Diana_Tomate",
+    "Moho_Foliar_Tomate",
+    "Mosaico_Tomate",
+    "Oidio_Vid",
+    "Planta_Sana",
+    "Septoria_Tomate",
+    "Tizon_Tardio_Papa",
+    "Tizon_Tardio_Tomate",
+    "Tizon_Temprano_Papa",
+    "Tizon_Temprano_Tomate",
+    "Virus_Rizo_Tomate",
+]
 
 # ─── HIPERPARÁMETRO: MODEL_PATH ───
 # Ruta al archivo de pesos serializados (.pth) exportado por entrenar_cnn.py.
@@ -138,7 +153,7 @@ async def lifespan(app: FastAPI):
         # torch.load deserializa el state_dict desde disco.
         # load_state_dict() mapea cada tensor de pesos al parámetro correspondiente
         # de la red (conv1.weight, conv1.bias, fc1.weight, etc.).
-        model.load_state_dict(torch.load(MODEL_PATH))
+        model.load_state_dict(torch.load(MODEL_PATH, map_location='cpu', weights_only=True))
 
         # ─── model.eval(): MODO INFERENCIA ───
         # Diferencias con model.train():
