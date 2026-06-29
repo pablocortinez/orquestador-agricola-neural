@@ -487,8 +487,8 @@ MSE es para regresión (valores continuos). Para clasificación, la "respuesta c
 > 🌾 **Analogía del Estudiante Arrogante:** Si un aprendiz se equivoca pero admite "no estoy muy seguro", el reto es leve. Pero si se equivoca gritando "¡Estoy 100% seguro de que esta hoja con hongos está SANA!", la *CrossEntropy* le aplica un castigo monumental (Loss enorme) para quitarle la arrogancia rápidamente y forzar un cambio brusco en sus pesos.
 
 ### 📝 Auto-Evaluación (Nivel 4.2)
-<details><summary>¿Por qué usamos CrossEntropyLoss en vez de MSE en este proyecto?</summary>
-Porque nuestro problema es de "clasificación" (elegir una categoría entre 3 opciones), no de "regresión" (predecir un número). CrossEntropy penaliza logarítmicamente los errores donde el modelo está muy seguro de una respuesta equivocada, forzándolo a aprender más rápido.
+<details><summary>Si un colega sugiere cambiar CrossEntropyLoss por MSE (Error Cuadrático Medio), ¿por qué sería un error matemático grave para este proyecto?</summary>
+Sería un error porque MSE está diseñado para problemas de **Regresión** (predecir valores continuos como la temperatura). Nuestro proyecto es de **Clasificación** (predecir categorías discretas). Matemáticamente, CrossEntropy trabaja con probabilidades y aplica un "castigo extremo" (logarítmico) cuando la red se equivoca estando muy confiada. Si la red dice estar 99% segura de una enfermedad incorrecta, CrossEntropy dispara el error para forzar una corrección rápida de los pesos, algo que el MSE haría de forma muy lenta y suave.
 </details>
 
 ---
