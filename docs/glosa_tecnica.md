@@ -57,20 +57,17 @@ Un agricultor tiene una planta enferma. Toma una foto con el celular. El sistema
 
 ### Los tres pasos del sistema
 
-```
-📷 Foto de la hoja
-       │
-       ▼
-🧠 Red Neuronal — analiza la imagen como un experto visual
-       │ "Es Oídio, confianza 92%"
-       ▼
-🌤️ API del Clima — consulta temperatura y humedad
-       │
-       ▼
-🤖 Gemini (IA de Google) — cruza diagnóstico + clima → recomienda tratamiento
-       │
-       ▼
-💬 Respuesta al agricultor (web o Telegram)
+```mermaid
+graph TD
+    A[📷 Foto del Agricultor] --> B(🧠 Red Neuronal PyTorch)
+    D[🌤️ API OpenWeather] --> C
+    B -->|Diagnóstico visual| C{Orquestador n8n}
+    C --> E(🤖 Agente Gemini)
+    E -->|Recomendación cruzada| F[💬 Respuesta en Telegram]
+    
+    style B fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#f96,stroke:#333,stroke-width:4px
 ```
 
 ### Las tres clases detectadas
@@ -185,24 +182,17 @@ La "lupa" se llama **filtro** o **kernel**. La red tiene 2 bloques de filtros se
 
 ### La arquitectura de AgricolaCNN
 
-```
-FOTO (64×64 píxeles, 3 canales RGB)
-    │
-    ▼ BLOQUE CONV 1: 16 filtros buscan patrones simples
-    │   La imagen mantiene su tamaño (64×64) pero ahora tiene 16 "versiones"
-    │   Luego se achica a la mitad → 32×32  (operación: MaxPooling)
-    │
-    ▼ BLOQUE CONV 2: 32 filtros buscan patrones complejos
-    │   La imagen sigue siendo 32×32 pero ahora tiene 32 "versiones"
-    │   Luego se achica a la mitad → 16×16  (operación: MaxPooling)
-    │
-    ▼ APLANADO (Flatten): convierte la cuadrícula en una lista
-    │   32 versiones × 16×16 píxeles = 8192 números en fila
-    │
-    ▼ CLASIFICADOR (Red Densa / MLP): reduce y decide
-    │   8192 números → 64 neuronas → 3 scores finales
-    │
-    ▼ El score más alto gana → "Oidio_Vid con 92%"
+```mermaid
+graph TD
+    A[FOTO RGB <br> 64x64 píxeles] -->|3 Canales| B[BLOQUE CONV 1 <br> 16 Filtros]
+    B -->|16 mapas de 32x32| C[BLOQUE CONV 2 <br> 32 Filtros]
+    C -->|32 mapas de 16x16| D[APLANADO <br> Flatten]
+    D -->|Fila de 8192 números| E[RED DENSA <br> 64 Neuronas]
+    E -->|3 Scores finales| F((Veredicto))
+    
+    style A fill:#cfc,stroke:#333
+    style D fill:#fcf,stroke:#333
+    style F fill:#cff,stroke:#333
 ```
 
 ### ¿Qué guarda `modelo_vision.pth`?
