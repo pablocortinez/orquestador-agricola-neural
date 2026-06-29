@@ -22,7 +22,7 @@
 
 ## ⚪ Nivel 0 — Diccionario de Conceptos Básicos (Analogías)
 
-Antes de ver cómo funciona el código, necesitas entender 5 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
+Antes de ver cómo funciona el código, necesitas entender 9 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
 
 | Concepto Técnico | Analogía Agrícola | Definición Simple |
 |---|---|---|
@@ -31,6 +31,10 @@ Antes de ver cómo funciona el código, necesitas entender 5 palabras clave de I
 | **Lote (Batch)** | La prueba corta | Cuántas fotos mira antes de hacer una prueba y corregir sus errores. Si `BATCH_SIZE=32`, mira 32 hojas, intenta adivinar qué son, y luego se corrige a sí misma. |
 | **Tensor** | La foto convertida a números | El computador no entiende "hoja verde". Un tensor es una matriz gigante de números que representa el nivel de brillo y los colores de cada píxel de la foto. |
 | **Pesos (Weights)** | La intuición o "experiencia" | Son los millones de números internos que la red ajusta tras equivocarse. Si falla, cambia sus "pesos" hasta volverse un experto visual. |
+| **Loss (Pérdida)** | El reto o castigo | Un puntaje que mide qué tan equivocada estuvo la red. El objetivo principal del entrenamiento es empujar este número hacia el cero. |
+| **Learning Rate** | El tamaño del paso | Qué tan rápido dejamos que la red cambie de opinión tras un error. Si es muy grande, se vuelve inestable; si es muy chico, el entrenamiento no termina nunca. |
+| **Inferencia** | Trabajar solo en el campo | Cuando el entrenamiento termina y por fin usamos el modelo para analizar fotos nuevas enviadas por el agricultor. |
+| **Overfitting** | Memorizar sin entender | El peor defecto de la IA: cuando el modelo se memoriza las fotos del entrenamiento a la perfección, pero si le pasas la foto de otro huerto distinto, falla horriblemente. |
 
 ---
 
