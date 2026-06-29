@@ -6,6 +6,7 @@
 
 ## Índice
 
+- ⚪ [Nivel 0 — Diccionario de Conceptos Básicos (Analogías) (3 min)](#-nivel-0--diccionario-de-conceptos-básicos-analogías)
 - 🟢 [Nivel 1 — ¿Qué hace este proyecto? (5 min)](#-nivel-1--qué-hace-este-proyecto)
 - 🟢🟡 [Nivel 1.5 — El sistema por dentro, sin fórmulas (7 min)](#-nivel-15--el-sistema-por-dentro-sin-fórmulas)
 - 🟡 [Nivel 2 — La arquitectura de la red (10 min)](#-nivel-2--la-arquitectura-de-la-red)
@@ -16,6 +17,20 @@
 - 🟣 [Nivel 5 — La Orquestación (n8n y Telegram) (30 min)](#-nivel-5--la-orquestación-n8n-y-telegram)
 - ⚫ [Nivel 6 — Auditoría completa de hiperparámetros (referencia)](#-nivel-6--auditoría-completa-de-hiperparámetros)
 - 📝 [Preguntas de Auto-Evaluación](#-preguntas-de-auto-evaluación)
+
+---
+
+## ⚪ Nivel 0 — Diccionario de Conceptos Básicos (Analogías)
+
+Antes de ver cómo funciona el código, necesitas entender 5 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
+
+| Concepto Técnico | Analogía Agrícola | Definición Simple |
+|---|---|---|
+| **Dataset** | El álbum de fotos | Todas las imágenes y etiquetas (ej. "Sana", "Tizón") que usamos para enseñarle al sistema. |
+| **Época (Epoch)** | Leer el manual completo una vez | Cuando la red neuronal revisa el 100% de las imágenes de entrenamiento *una vez*. Si `EPOCHS=10`, la red lee el libro entero 10 veces para memorizar mejor. |
+| **Lote (Batch)** | La prueba corta | Cuántas fotos mira antes de hacer una prueba y corregir sus errores. Si `BATCH_SIZE=32`, mira 32 hojas, intenta adivinar qué son, y luego se corrige a sí misma. |
+| **Tensor** | La foto convertida a números | El computador no entiende "hoja verde". Un tensor es una matriz gigante de números que representa el nivel de brillo y los colores de cada píxel de la foto. |
+| **Pesos (Weights)** | La intuición o "experiencia" | Son los millones de números internos que la red ajusta tras equivocarse. Si falla, cambia sus "pesos" hasta volverse un experto visual. |
 
 ---
 
