@@ -118,25 +118,6 @@ data/
   Tizon_Tardio_Papa/ ← ~1000 fotos de hojas con Tizón
 ```
 
-
-### 📝 Auto-Evaluación (Nivel 6)
-<details><summary>¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?</summary>
-Un MLP aplanaría la imagen inmediatamente, destruyendo la relación espacial (el píxel de arriba no tendría relación con el de abajo). La CNN usa filtros 2D que deslizan por la foto, preservando la geometría y buscando patrones locales como manchas y bordes.
-</details>
-
-<details><summary>¿Por qué se eligieron los hiperparámetros actuales (IMG_SIZE=64, BATCH_SIZE=32, EPOCHS=10) y qué pasaría si los alteramos drásticamente?</summary>
-Fueron elegidos por ser un compromiso entre precisión y costo computacional (entrenable en CPU de un laptop). Si usamos IMG_SIZE=224, colapsaría la memoria sin GPU. Si usamos EPOCHS=100 en un dataset tan chico, la red se memorizaría las fotos (Overfitting).
-</details>
-
-<details><summary>Si tuvieras más tiempo, ¿qué técnica usarías para mitigar el desbalance de clases (152 Sanas vs 1000 Enfermas)?</summary>
-Usaría un <code>WeightedRandomSampler</code> en el DataLoader, que obliga a PyTorch a extraer con más probabilidad fotos de la clase minoritaria (Sana) en cada batch, o utilizaría funciones de pérdida con pesos (Weighted Cross Entropy).
-</details>
-
-<details><summary>Más allá del código actual, ¿qué mejora arquitectónica le harías a la CNN para reducir sus parámetros (peso en MB)?</summary>
-Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera capa densa tiene más de 500,000 parámetros. Al hacer pooling global, promediamos cada canal reduciendo los parámetros drásticamente sin perder precisión, haciendo el modelo mucho más ligero.
-</details>
-
-
 > [!TIP]
 > **El diseño de "Planta_Sana":** El script `preparar_dataset.py` construye esta clase combinando hojas sanas de papa, tomate y pimiento. Es un concepto clave de Deep Learning: si usáramos solo papa sana, la red podría memorizar que "sano = forma de hoja de papa". Al mezclar especies, obligamos a la red a extraer patrones reales de "salud" (color uniforme, sin manchas) ignorando la forma de la hoja.
 
@@ -651,3 +632,22 @@ graph LR
 
 ---
 
+### 📝 Auto-Evaluación (Nivel 6)
+<details><summary>¿Por qué usar una CNN en lugar de un Perceptrón Multicapa (MLP) estándar para procesar estas imágenes?</summary>
+Un MLP aplanaría la imagen inmediatamente, destruyendo la relación espacial (el píxel de arriba no tendría relación con el de abajo). La CNN usa filtros 2D que deslizan por la foto, preservando la geometría y buscando patrones locales como manchas y bordes.
+</details>
+
+<details><summary>¿Por qué se eligieron los hiperparámetros actuales (IMG_SIZE=64, BATCH_SIZE=32, EPOCHS=10) y qué pasaría si los alteramos drásticamente?</summary>
+Fueron elegidos por ser un compromiso entre precisión y costo computacional (entrenable en CPU de un laptop). Si usamos IMG_SIZE=224, colapsaría la memoria sin GPU. Si usamos EPOCHS=100 en un dataset tan chico, la red se memorizaría las fotos (Overfitting).
+</details>
+
+<details><summary>Si tuvieras más tiempo, ¿qué técnica usarías para mitigar el desbalance de clases (152 Sanas vs 1000 Enfermas)?</summary>
+Usaría un <code>WeightedRandomSampler</code> en el DataLoader, que obliga a PyTorch a extraer con más probabilidad fotos de la clase minoritaria (Sana) en cada batch, o utilizaría funciones de pérdida con pesos (Weighted Cross Entropy).
+</details>
+
+<details><summary>Más allá del código actual, ¿qué mejora arquitectónica le harías a la CNN para reducir sus parámetros (peso en MB)?</summary>
+Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera capa densa tiene más de 500,000 parámetros. Al hacer pooling global, promediamos cada canal reduciendo los parámetros drásticamente sin perder precisión, haciendo el modelo mucho más ligero.
+</details>
+
+> [!TIP]
+> Para la disertación: domina **Niveles 1 al 3** y el **Nivel 5 (Orquestador)** para explicar con fluidez el ecosistema completo. Prepara **3.5** para preguntas del evaluador. **4 y 6** son para casos donde el profesor profundice mucho.
