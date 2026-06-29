@@ -13,7 +13,10 @@
 - 🟡🟠 [Nivel 2.5 — Capas, parámetros y el flujo de datos (13 min)](#-nivel-25--capas-parámetros-y-el-flujo-de-datos)
 - 🟠 [Nivel 3 — Cómo aprende la red (15 min)](#-nivel-3--cómo-aprende-la-red)
 - 🟠🔴 [Nivel 3.5 — El ciclo de entrenamiento con términos reales (18 min)](#-nivel-35--el-ciclo-de-entrenamiento-con-términos-reales)
-- 🔴 [Nivel 4 — Fundamentos matemáticos y decisiones de diseño (25 min)](#-nivel-4--fundamentos-matemáticos-y-decisiones-de-diseño)
+- 🔴 [Nivel 4.0 — Matemáticas de la Activación (ReLU vs Sigmoid) (20 min)](#-nivel-40--matemáticas-de-la-activación-relu-vs-sigmoid)
+- 🔴 [Nivel 4.1 — Matemáticas del Optimizador (Adam vs SGD) (22 min)](#-nivel-41--matemáticas-del-optimizador-adam-vs-sgd)
+- 🔴 [Nivel 4.2 — Matemáticas del Error (CrossEntropy vs MSE) (25 min)](#-nivel-42--matemáticas-del-error-crossentropy-vs-mse)
+- 🔴 [Nivel 4.3 — Bugs de Datos y Flujo de Tensores (28 min)](#-nivel-43--bugs-de-datos-y-flujo-de-tensores)
 - 🟣 [Nivel 5 — La Orquestación (n8n y Telegram) (30 min)](#-nivel-5--la-orquestación-n8n-y-telegram)
 - ⚫ [Nivel 6 — Auditoría completa de hiperparámetros (referencia)](#-nivel-6--auditoría-completa-de-hiperparámetros)
 - 📝 [Preguntas de Auto-Evaluación](#-preguntas-de-auto-evaluación)
@@ -421,11 +424,9 @@ Le dice a PyTorch que apague el motor que registra las operaciones para calcular
 
 ---
 
-## 🔴 Nivel 4 — Fundamentos matemáticos y decisiones de diseño
+## 🔴 Nivel 4.0 — Matemáticas de la Activación (ReLU vs Sigmoid)
 
-**El "por qué" detrás de cada decisión técnica.**
-
-### ¿Por qué ReLU y no Sigmoid?
+**El "por qué" detrás de las funciones de activación.**
 
 | Característica | Sigmoid (Antiguo) | ReLU (Moderno) |
 |---|---|---|
@@ -440,7 +441,16 @@ Le dice a PyTorch que apague el motor que registra las operaciones para calcular
 - `Sigmoid'(x) ≤ 0.25` → después de 3 capas: `0.25³ = 0.016` → gradiente casi nulo → `conv1` no aprende nada
 - `ReLU'(x) = 1` para x > 0 → gradiente sin reducción → todas las capas aprenden
 
-### ¿Por qué Adam y no SGD puro?
+### 📝 Auto-Evaluación (Nivel 4.0)
+<details><summary>¿Por qué ReLU mitiga el vanishing gradient y Sigmoid no?</summary>
+Porque la derivada (el gradiente) de Sigmoid nunca es mayor a 0.25, por lo que el error se achica (se desvanece) al multiplicarse capa tras capa hacia atrás. ReLU, para números positivos, tiene una derivada de 1, transmitiendo el error al 100% sin que se pierda.
+</details>
+
+---
+
+## 🔴 Nivel 4.1 — Matemáticas del Optimizador (Adam vs SGD)
+
+**El "por qué" detrás del algoritmo de aprendizaje.**
 
 | Característica | SGD (Descenso de Gradiente Estocástico) | Adam (Adaptive Moment Estimation) |
 |---|---|---|
@@ -456,7 +466,16 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 
 **Resultado:** con solo 630 actualizaciones disponibles, Adam converge donde SGD todavía está calentando.
 
-### ¿Por qué CrossEntropyLoss y no MSE?
+### 📝 Auto-Evaluación (Nivel 4.1)
+<details><summary>¿Por qué Adam converge más rápido que SGD puro con pocas actualizaciones?</summary>
+Porque Adam recuerda los gradientes de los pasos anteriores (Momentum) y ajusta el tamaño del paso (Learning Rate) independientemente para cada peso. SGD usa el mismo paso fijo y ciego para todo, tardando mucho más en encontrar el camino al mínimo.
+</details>
+
+---
+
+## 🔴 Nivel 4.2 — Matemáticas del Error (CrossEntropy vs MSE)
+
+**El "por qué" detrás de cómo castigamos a la red.**
 
 | Función de Pérdida | Uso Principal | Cómo penaliza el error |
 |---|---|---|
@@ -466,6 +485,17 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 MSE es para regresión (valores continuos). Para clasificación, la "respuesta correcta" es una etiqueta discreta (0, 1 o 2). CrossEntropyLoss está diseñada para probabilidades: penaliza exponencialmente cuando el modelo está muy confiado pero equivocado.
 
 > 🌾 **Analogía del Estudiante Arrogante:** Si un aprendiz se equivoca pero admite "no estoy muy seguro", el reto es leve. Pero si se equivoca gritando "¡Estoy 100% seguro de que esta hoja con hongos está SANA!", la *CrossEntropy* le aplica un castigo monumental (Loss enorme) para quitarle la arrogancia rápidamente y forzar un cambio brusco en sus pesos.
+
+### 📝 Auto-Evaluación (Nivel 4.2)
+<details><summary>¿Por qué usamos CrossEntropyLoss en vez de MSE en este proyecto?</summary>
+Porque nuestro problema es de "clasificación" (elegir una categoría entre 3 opciones), no de "regresión" (predecir un número). CrossEntropy penaliza logarítmicamente los errores donde el modelo está muy seguro de una respuesta equivocada, forzándolo a aprender más rápido.
+</details>
+
+---
+
+## 🔴 Nivel 4.3 — Bugs de Datos y Flujo de Tensores
+
+**Detalles técnicos que causan errores catastróficos si no se cuidan.**
 
 ### El bug de CLASS_NAMES (caso de estudio real)
 
@@ -499,18 +529,7 @@ PIL [H, W, 3]  →  Resize  →  PIL [64, 64, 3]
   →  CrossEntropyLoss      →  []           ← escalar (loss)
 ```
 
----
-
-
-### 📝 Auto-Evaluación (Nivel 4)
-<details><summary>¿Por qué ReLU mitiga el vanishing gradient y Sigmoid no?</summary>
-Porque la derivada (el gradiente) de Sigmoid nunca es mayor a 0.25, por lo que el error se achica (se desvanece) al multiplicarse capa tras capa hacia atrás. ReLU, para números positivos, tiene una derivada de 1, transmitiendo el error al 100% sin que se pierda.
-</details>
-
-<details><summary>¿Por qué Adam converge más rápido que SGD puro con pocas actualizaciones?</summary>
-Porque Adam recuerda los gradientes de los pasos anteriores (Momentum) y ajusta el tamaño del paso (Learning Rate) independientemente para cada peso. SGD usa el mismo paso fijo y ciego para todo, tardando mucho más en encontrar el camino al mínimo.
-</details>
-
+### 📝 Auto-Evaluación (Nivel 4.3)
 <details><summary>¿Por qué <code>CLASS_NAMES</code> debe estar obligatoriamente en orden alfabético?</summary>
 Porque la clase <code>ImageFolder</code> de PyTorch (que usamos para cargar las fotos) asigna los índices numéricos 0, 1, 2 a las carpetas en estricto orden alfabético. Si nuestro código no respeta ese orden, cruzaremos las etiquetas al predecir.
 </details>
