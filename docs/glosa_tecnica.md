@@ -671,3 +671,24 @@ Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera cap
 
 > [!TIP]
 > Para la disertación: domina **Niveles 1 al 3** y el **Nivel 5 (Orquestador)** para explicar con fluidez el ecosistema completo. Prepara **3.5** para preguntas del evaluador. **4 y 6** son para casos donde el profesor profundice mucho.
+
+---
+
+## 🏆 Nivel 7 — Criterio Profesional (Preguntas Capciosas de Comisión)
+
+**Estas preguntas evalúan tu toma de decisiones como Ingeniero, más que tu código.**
+
+<details><summary>Veo que usó todo su dataset de ~2000 fotos para entrenar. Las buenas prácticas dictan que uno debe dividir el dataset en Entrenamiento y Validación (Train/Val Split). ¿Por qué no lo hizo y qué riesgo conlleva?</summary>
+"Profesor, por limitaciones de tiempo y volumen de datos (la clase Sana solo tiene 152 fotos) usé todo para entrenamiento. El riesgo es que no puedo saber si el modelo sufre de *Overfitting* (memorización) hasta que lo pruebo en producción con fotos nuevas. Si tuviera más tiempo y volumen, implementaría un `random_split` de 80/20 en PyTorch."
+</details>
+
+<details><summary>Si ya está usando Gemini al final del flujo, ¿por qué se tomó la molestia de entrenar una red neuronal PyTorch en su computadora? ¿No era más fácil enviarle la foto directamente a Gemini Vision?</summary>
+"Por tres motivos críticos en la industria: **Costo, Privacidad y Especialización**. Llamar a la API de Google Vision con imágenes es muy caro y lento. Mi CNN local procesa la imagen gratis, en milisegundos y de forma privada. Solo uso a Gemini para procesar texto, combinando lo mejor de ambos mundos: la eficiencia y privacidad matemática local con el lenguaje natural de Google."
+</details>
+
+<details><summary>Si le diera presupuesto ilimitado en servidores con tarjetas de video (GPUs), ¿qué hiperparámetros de su modelo subiría primero para mejorar la precisión y por qué no lo hizo ahora?</summary>
+"Subiría la resolución de las imágenes (`IMG_SIZE`) de 64x64 a 224x224 para capturar más detalles visuales, y aumentaría el `BATCH_SIZE` a 64 o 128 para estabilizar y promediar mejor el error. No lo hice ahora porque entrenar matrices de 224x224 usando la CPU de un notebook colapsaría la memoria RAM en la primera iteración."
+</details>
+
+> [!IMPORTANT]
+> Para la disertación: domina **Niveles 1 al 3** y el **Nivel 5 (Orquestador)** para explicar con fluidez el ecosistema. Prepara **3.5** para defender tu código en vivo. **4, 6 y 7** son tu escudo indestructible para la ronda final de preguntas de la comisión.
