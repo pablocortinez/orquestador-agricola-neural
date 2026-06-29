@@ -58,7 +58,7 @@ Un agricultor tiene una planta enferma. Toma una foto con el celular. El sistema
 💬 Respuesta al agricultor (web o Telegram)
 ```
 
-### Las tres enfermedades detectadas
+### Las tres clases detectadas
 
 | Clase | Qué es | Síntoma visual |
 |---|---|---|
@@ -70,7 +70,7 @@ Un agricultor tiene una planta enferma. Toma una foto con el celular. El sistema
 
 | Archivo | Qué hace en una frase |
 |---|---|
-| `entrenar_cnn.py` | Enseña a la red a distinguir las 3 enfermedades usando miles de fotos |
+| `entrenar_cnn.py` | Enseña a la red a distinguir estas 3 clases usando miles de fotos |
 | `api_vision.py` | Expone la red entrenada como servicio web que recibe fotos y responde diagnósticos |
 
 ---
@@ -144,7 +144,7 @@ FOTO (64×64 píxeles, 3 canales RGB)
     ▼ APLANADO (Flatten): convierte la cuadrícula en una lista
     │   32 versiones × 16×16 píxeles = 8192 números en fila
     │
-    ▼ CLASIFICADOR (MLP): reduce y decide
+    ▼ CLASIFICADOR (Red Densa / MLP): reduce y decide
     │   8192 números → 64 neuronas → 3 scores finales
     │
     ▼ El score más alto gana → "Oidio_Vid con 92%"
@@ -470,7 +470,7 @@ graph LR
 ## 📝 Preguntas de Auto-Evaluación
 
 ### 🟢 Nivel 1
-- ¿Qué tres enfermedades detecta? ¿Cómo se ven visualmente?
+- ¿Cuáles son las 3 clases que el modelo puede distinguir y cómo se ven visualmente?
 - ¿Cuál es el rol de Gemini en el sistema?
 - ¿Qué pasa si se pierde el archivo `modelo_vision.pth`?
 
