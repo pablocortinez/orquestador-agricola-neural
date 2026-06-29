@@ -568,8 +568,8 @@ Con esto se logra una arquitectura limpia de **3 capas desacopladas**: UI (Teleg
 El principio clave de diseño aquí es el **desacoplamiento**. Si programara todo junto en un solo script, el modelo de IA (la CNN) quedaría fuertemente atado a la interfaz de usuario (Telegram). Al usar n8n, divido el sistema en 3 capas independientes: La Interfaz, Los Modelos Expertos (FastAPI/Gemini) y el Orquestador. n8n actúa como "Director de Orquesta" encargándose exclusivamente de enrutar la información. Esto mantiene el código Python limpio, enfocado 100% en la predicción visual, y hace que la arquitectura sea altamente escalable (ej. cambiar Telegram por WhatsApp en el futuro sería trivial).
 </details>
 
-<details><summary>Según tu lógica de negocio, ¿qué ocurre si la API de PyTorch devuelve una <code>confianza</code> menor a 0.65?</summary>
-El prompt de Gemini está configurado para leer esa confianza. Si es menor a 0.65, en vez de recomendar un tratamiento basado en una predicción dudosa, le dirá al usuario que la foto no es concluyente y le pedirá que suba una imagen más clara.
+<details><summary>Si el modelo devuelve un diagnóstico pero con una confianza muy baja (ej. 45%), ¿qué responde Gemini y por qué diseñaste esta regla de negocio en n8n?</summary>
+En ese escenario, Gemini **no** recomendará ningún tratamiento. Le responderá al agricultor que la foto no es concluyente y le pedirá una imagen más clara. Diseñé esta regla (umbral de confianza del 0.65) como un mecanismo de seguridad crítico. En la agricultura, recomendar un pesticida tóxico basándose en una "adivinanza" del modelo (baja confianza) podría arruinar un cultivo real. A nivel de arquitectura de software, es preferible forzar al usuario a repetir la acción antes que entregar un falso positivo peligroso.
 </details>
 
 <details><summary>Nombra al menos 3 APIs o servicios con los que se comunica el orquestador durante una ejecución.</summary>
