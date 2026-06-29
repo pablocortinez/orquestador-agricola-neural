@@ -463,8 +463,8 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 **Resultado:** con solo 630 actualizaciones disponibles, Adam converge donde SGD todavía está calentando.
 
 ### 📝 Auto-Evaluación (Nivel 4.1)
-<details><summary>¿Por qué Adam converge más rápido que SGD puro con pocas actualizaciones?</summary>
-Porque Adam recuerda los gradientes de los pasos anteriores (Momentum) y ajusta el tamaño del paso (Learning Rate) independientemente para cada peso. SGD usa el mismo paso fijo y ciego para todo, tardando mucho más en encontrar el camino al mínimo.
+<details><summary>Sabiendo que su red tiene muy pocas actualizaciones (10 épocas), ¿por qué eligió Adam en lugar del clásico algoritmo SGD?</summary>
+Elegí Adam porque tiene dos propiedades matemáticas clave para un entrenamiento corto: 1) **Adaptive Learning Rate:** SGD aplica un tamaño de paso ciego y fijo para todos los parámetros de la red. Adam ajusta dinámicamente el paso para cada peso de forma individual. 2) **Momentum:** Adam recuerda el historial de gradientes anteriores para darle inercia a la red y no quedarse atascada. Gracias a esto, Adam logra la convergencia matemática rapidísimo (en solo 10 épocas), mientras que SGD necesitaría miles de épocas de gasto computacional para lograr la misma precisión.
 </details>
 
 ---
