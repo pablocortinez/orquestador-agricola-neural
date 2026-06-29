@@ -470,24 +470,68 @@ graph LR
 ## 📝 Preguntas de Auto-Evaluación
 
 ### 🟢 Nivel 1
-- ¿Cuáles son las 3 clases que el modelo puede distinguir y cómo se ven visualmente?
-- ¿Cuál es el rol de Gemini en el sistema?
-- ¿Qué pasa si se pierde el archivo `modelo_vision.pth`?
+<details><summary>¿Cuáles son las 3 clases que el modelo puede distinguir y cómo se ven visualmente?</summary>
+Planta_Sana (verde uniforme), Tizon_Tardio_Papa (manchas marrones oscuras) y Oidio_Vid (polvo blanco en la hoja).
+</details>
+
+<details><summary>¿Cuál es el rol de Gemini en el sistema?</summary>
+Cruza el diagnóstico visual de la CNN con los datos climáticos actuales de la zona para recomendar un tratamiento agronómico contextualizado y seguro (ej. no sugerir químicos de contacto si llueve).
+</details>
+
+<details><summary>¿Qué pasa si se pierde el archivo <code>modelo_vision.pth</code>?</summary>
+El sistema de inferencia falla porque la red neuronal se queda "vacía", sin los pesos (experiencia) aprendidos durante el entrenamiento. Habría que entrenarla desde cero de nuevo.
+</details>
+
+<details><summary>¿Por qué el sistema usa Gemini si ya tiene una Red Neuronal (CNN) para analizar la foto?</summary>
+La CNN solo es experta en "ver" e identificar la enfermedad, pero no sabe nada de agronomía ni clima. Gemini actúa como el "agrónomo experto" que le da valor real al agricultor recomendando qué hacer a continuación.
+</details>
 
 ### 🟢🟡 Nivel 1.5
-- ¿Qué diferencia hay entre entrenamiento e inferencia?
-- ¿Por qué hay más fotos de Oídio y Tizón que de plantas sanas?
-- ¿Qué contiene el JSON que responde `api_vision.py`?
+<details><summary>¿Qué diferencia hay entre entrenamiento e inferencia?</summary>
+En el entrenamiento, el modelo aprende ajustando sus parámetros usando miles de ejemplos (toma mucho tiempo y recursos). En la inferencia, el modelo ya no aprende, solo aplica lo aprendido a fotos nuevas para dar una respuesta rápida.
+</details>
+
+<details><summary>¿Por qué la clase <code>Planta_Sana</code> mezcla hojas de papa, tomate y pimiento en lugar de usar solo una?</summary>
+Para evitar sesgos. Si usáramos solo papa, la red podría aprender que "sano" significa "tener forma de hoja de papa". Al mezclar especies, la forzamos a aprender características reales de salud (color verde, sin manchas).
+</details>
+
+<details><summary>¿Qué significa que exista "desbalance de clases" en este dataset?</summary>
+Significa que hay muchas más imágenes de enfermedades (1000 de Oídio y 1000 de Tizón) que de plantas sanas (152). Esto puede causar que el modelo se acostumbre a predecir "enfermo" más a menudo de lo que debería.
+</details>
+
+<details><summary>¿Qué contiene el JSON que responde <code>api_vision.py</code>?</summary>
+Contiene el <code>diagnostico</code> (la clase con mayor probabilidad) y la <code>confianza</code> (un porcentaje entre 0 y 1 indicando qué tan seguro está el modelo).
+</details>
 
 ### 🟡 Nivel 2
-- ¿Qué detecta el Bloque Conv 1 vs el Bloque Conv 2?
-- ¿Por qué la imagen "se achica" espacialmente pero aumentan los canales?
-- ¿Para qué sirve el aplanado (flatten)?
+<details><summary>¿Qué detecta el Bloque Conv 1 vs el Bloque Conv 2?</summary>
+Conv 1 actúa como una lupa básica que detecta características simples como bordes, líneas o cambios bruscos de color. Conv 2 toma esos bordes y los combina para detectar patrones complejos como las manchas redondas del Tizón o la textura del Oídio.
+</details>
+
+<details><summary>En tu arquitectura usas MaxPooling. ¿Por qué se "achica" la imagen espacialmente?</summary>
+Se achica para condensar la información más importante, reducir el costo computacional (menos píxeles que procesar) y darle a la red "invarianza espacial" (poder detectar una mancha sin importar si está arriba o abajo en la foto).
+</details>
+
+<details><summary>¿Por qué aumentan las "versiones" (canales) de la imagen a medida que avanzamos?</summary>
+Porque en cada paso queremos buscar más características. Pasamos de 3 colores RGB a 16 filtros de patrones, y luego a 32 filtros, permitiendo que la red extraiga información cada vez más rica.
+</details>
+
+<details><summary>¿Para qué sirve el aplanado (flatten)?</summary>
+Convierte la matriz 2D de píxeles (que viene de las convoluciones) en una sola fila larga (1D) de 8192 números, para que pueda ser inyectada en la red densa (MLP) final que toma la decisión.
+</details>
 
 ### 🟡🟠 Nivel 2.5
-- ¿Qué shape tiene el tensor después de `pool2`? ¿Cómo se calcula 8192?
-- ¿Por qué se procesan 32 fotos juntas y no una a la vez?
-- ¿Qué capa tiene el 99% de los parámetros y por qué?
+<details><summary>¿Qué shape tiene el tensor después de <code>pool2</code>? ¿Cómo se calcula 8192?</summary>
+El shape es <code>[32, 32, 16, 16]</code> (32 imágenes, 32 canales, de 16x16 píxeles cada una). El 8192 sale de multiplicar los canales por los píxeles: <code>32 × 16 × 16 = 8192</code>.
+</details>
+
+<details><summary>¿Por qué se procesan 32 fotos juntas (un batch) y no una a la vez?</summary>
+Porque es mucho más rápido al usar operaciones matemáticas matriciales en paralelo, y porque promediar el error de 32 fotos a la vez hace que el ajuste de la red (los gradientes) sea mucho más estable que si se ajustara foto por foto.
+</details>
+
+<details><summary>¿Qué capa tiene el 99% de los parámetros y por qué?</summary>
+La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta los 8192 valores del flattened tensor con 64 neuronas, requiere <code>8192 × 64 = 524,288</code> pesos individuales (conexiones).
+</details>
 
 ### 🟠 Nivel 3
 - Nombra los 5 pasos de cada iteración de entrenamiento en orden.
