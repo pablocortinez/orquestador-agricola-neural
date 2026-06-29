@@ -30,17 +30,17 @@ Antes de ver cómo funciona el código, necesitas entender 20 palabras clave de 
 | Concepto Técnico | Analogía Agrícola | Definición Simple (con toque técnico) |
 |---|---|---|
 | **Dataset** | El álbum de fotos etiquetado | Conjunto de imágenes (`features`) y sus diagnósticos (`labels`) que la red usa para aprender estadísticamente a separar clases. |
-| **Época (Epoch)** | Leer el manual completo una vez | Un ciclo completo donde la red procesa el 100% del dataset. Si `EPOCHS=10`, la red iterará 10 veces sobre los datos para minimizar el error. |
-| **Lote (Batch)** | La prueba corta | Subconjunto de fotos (ej. 32) que se procesan simultáneamente en memoria antes de actualizar los pesos, estabilizando el aprendizaje. |
+| **Época (Epoch)** *(Hiperparámetro)* | Leer el manual completo una vez | Un ciclo completo donde la red procesa el 100% del dataset. Si `EPOCHS=10`, la red iterará 10 veces sobre los datos para minimizar el error. |
+| **Lote (Batch)** *(Hiperparámetro)* | La prueba corta | Subconjunto de fotos (ej. 32) que se procesan simultáneamente en memoria antes de actualizar los pesos, estabilizando el aprendizaje. |
 | **Tensor** | La foto convertida a matriz matemática | Estructura de datos multidimensional. Una foto se convierte en un Tensor de forma `[Canales, Alto, Ancho]` con valores numéricos de píxeles. |
 | **Pesos (Weights)** | La "experiencia" o intuición | Los parámetros internos (números) que la red multiplica por los datos de entrada. Se ajustan iterativamente durante el entrenamiento. |
 | **Loss (Pérdida)** | El medidor de equivocaciones | Una métrica matemática (como `CrossEntropyLoss`) que cuantifica qué tan lejos estuvo la predicción de la red respecto a la etiqueta real. |
-| **Learning Rate** | El tamaño del paso al caminar | El multiplicador (ej. `0.001`) que define la magnitud con la que el Optimizador actualiza los pesos. Muy alto causa inestabilidad; muy bajo, estancamiento. |
+| **Learning Rate** *(Hiperparámetro)* | El tamaño del paso al caminar | El multiplicador (ej. `0.001`) que define la magnitud con la que el Optimizador actualiza los pesos. Muy alto causa inestabilidad; muy bajo, estancamiento. |
 | **Inferencia** | Trabajar solo en el campo | Fase de producción (`model.eval()`) donde se hace un *forward pass* sin calcular gradientes (sin aprender) solo para predecir fotos nuevas. |
 | **Overfitting** | Memorizar sin entender (Sobreajuste) | Cuando la red modela el "ruido" de los datos de entrenamiento perdiendo capacidad de generalización frente a imágenes que nunca ha visto. |
 | **Filtro Convolucional** | La lupa especializada | Una matriz pequeña (Kernel 3x3) que se desliza por la imagen calculando productos punto para extraer características (features) como bordes o texturas. |
 | **Función de Activación** | El umbral de decisión | Una operación matemática no-lineal (como `ReLU: max(0, x)`) que decide si la señal de una neurona es lo bastante fuerte para pasar a la siguiente capa. |
-| **Optimizador (ej. Adam)** | El GPS (Descenso de gradiente) | El algoritmo que usa las derivadas del error para guiar a los pesos hacia su valor óptimo, utilizando momentum para no quedarse atascado. |
+| **Optimizador (ej. Adam)** *(Hiperparámetro)* | El GPS (Descenso de gradiente) | El algoritmo que usa las derivadas del error para guiar a los pesos hacia su valor óptimo, utilizando momentum para no quedarse atascado. |
 | **Desbalance de Clases** | El huerto estadísticamente disparejo | Asimetría en el dataset (1000 fotos de Tizón vs 152 Sanas) que sesga las predicciones del modelo hacia la clase mayoritaria. |
 | **Pooling (MaxPool)** | El resumen espacial | Operación de reducción de dimensionalidad (downsampling) que extrae el valor máximo de una región (ej. 2x2), ahorrando RAM y dando invarianza a la posición. |
 | **Flatten (Aplanado)** | Desarmar el rompecabezas en fila | Capa que transforma el tensor tridimensional de los mapas de características en un vector unidimensional (1D) para poder inyectarlo a la red densa final. |
