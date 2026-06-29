@@ -78,9 +78,12 @@ El modelo aprendió usando el **dataset PlantVillage**: una colección de ~2000 
 ```
 data/
   Oidio_Vid/         ← ~1000 fotos de hojas con Oídio
-  Planta_Sana/       ← ~152 fotos de hojas sanas
+  Planta_Sana/       ← ~152 fotos de hojas sanas (papa, tomate y pimiento)
   Tizon_Tardio_Papa/ ← ~1000 fotos de hojas con Tizón
 ```
+
+> [!TIP]
+> **El diseño de "Planta_Sana":** El script `preparar_dataset.py` construye esta clase combinando hojas sanas de papa, tomate y pimiento. Es un concepto clave de Deep Learning: si usáramos solo papa sana, la red podría memorizar que "sano = forma de hoja de papa". Al mezclar especies, obligamos a la red a extraer patrones reales de "salud" (color uniforme, sin manchas) ignorando la forma de la hoja.
 
 > [!NOTE]
 > Hay muchas más fotos de Oídio y Tizón que de plantas sanas (152 vs 1000). Esto se llama **desbalance de clases** y es una debilidad conocida del sistema.
@@ -398,9 +401,10 @@ graph LR
         G --> J[Softmax+argmax]
         J --> K[JSON respuesta]
     end
-    subgraph "n8n"
-        K --> L[OpenWeather]
-        L --> M[Gemini]
+    subgraph "n8n (Orquestación)"
+        K -->|Input de n8n| L[Nodo HTTP: OpenWeather]
+        L -->|Diagnóstico + Clima| M[Nodo AI Agent: Gemini]
+        M -->|Recomendación| N[Nodo Telegram: Respuesta]
     end
 ```
 
