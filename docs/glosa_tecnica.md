@@ -24,28 +24,28 @@
 
 Antes de ver cómo funciona el código, necesitas entender 20 palabras clave de Inteligencia Artificial. Imagina que estás entrenando a un temporero nuevo (el modelo) para que aprenda a reconocer hojas enfermas:
 
-| Concepto Técnico | Analogía Agrícola | Definición Simple |
+| Concepto Técnico | Analogía Agrícola | Definición Simple (con toque técnico) |
 |---|---|---|
-| **Dataset** | El álbum de fotos | Todas las imágenes y etiquetas (ej. "Sana", "Tizón") que usamos para enseñarle al sistema. |
-| **Época (Epoch)** | Leer el manual completo una vez | Cuando la red neuronal revisa el 100% de las imágenes de entrenamiento *una vez*. Si `EPOCHS=10`, la red lee el libro entero 10 veces para memorizar mejor. |
-| **Lote (Batch)** | La prueba corta | Cuántas fotos mira antes de hacer una prueba y corregir sus errores. Si `BATCH_SIZE=32`, mira 32 hojas, intenta adivinar qué son, y luego se corrige a sí misma. |
-| **Tensor** | La foto convertida a números | El computador no entiende "hoja verde". Un tensor es una matriz gigante de números que representa el nivel de brillo y los colores de cada píxel de la foto. |
-| **Pesos (Weights)** | La intuición o "experiencia" | Son los millones de números internos que la red ajusta tras equivocarse. Si falla, cambia sus "pesos" hasta volverse un experto visual. |
-| **Loss (Pérdida)** | El reto o castigo | Un puntaje que mide qué tan equivocada estuvo la red. El objetivo principal del entrenamiento es empujar este número hacia el cero. |
-| **Learning Rate** | El tamaño del paso | Qué tan rápido dejamos que la red cambie de opinión tras un error. Si es muy grande, se vuelve inestable; si es muy chico, el entrenamiento no termina nunca. |
-| **Inferencia** | Trabajar solo en el campo | Cuando el entrenamiento termina y por fin usamos el modelo para analizar fotos nuevas enviadas por el agricultor. |
-| **Overfitting** | Memorizar sin entender | El peor defecto de la IA: cuando el modelo se memoriza las fotos del entrenamiento a la perfección, pero si le pasas la foto de otro huerto distinto, falla horriblemente. |
-| **Filtro Convolucional** | La lupa especializada | Una cuadrícula matemática que recorre la foto buscando características muy específicas, como cambios bruscos de color, bordes o manchas. |
-| **Función de Activación** | El interruptor de luz | Decide si la información que encontró la lupa es lo suficientemente importante (se "enciende") como para dejarla pasar a la siguiente capa. |
-| **Optimizador (ej. Adam)** | El GPS | El algoritmo que guía a la red paso a paso, indicándole exactamente en qué dirección debe cambiar sus pesos para equivocarse menos. |
-| **Desbalance de Clases** | El huerto disparejo | El problema de enseñarle a la red 1000 fotos de Tizón pero solo 100 fotos Sanas. La red se acostumbra a predecir "Tizón" solo por estadística. |
-| **Pooling (MaxPool)** | El resumen ejecutivo | La acción de achicar la imagen quedándose solo con los píxeles más importantes (los más brillantes o fuertes) para ahorrar memoria. |
-| **Flatten (Aplanado)** | Desarmar el rompecabezas | Convertir la cuadrícula de la foto en una sola línea larga de números para que el clasificador final pueda leerla de una vez. |
-| **Backpropagation** | Repartir la culpa | El proceso matemático de enviar el error desde el final hasta el principio de la red para que cada capa ajuste sus propios pesos. |
-| **Capa Densa (MLP)** | El comité de decisiones | La última parte de la red. Toma todo lo que encontraron las lupas (filtros) y decide, votando, a qué enfermedad pertenece la foto. |
-| **Normalización** | Nivelar el terreno | Poner todos los colores de la foto en la misma escala (-1 a 1) para que a la red no le cueste trabajo procesar fotos muy oscuras o muy brillantes. |
-| **Softmax** | El porcentaje de seguridad | Transforma el veredicto final de la red en porcentajes del 0 al 100% que suman exactamente 100 (ej: 90% Tizón, 8% Sana, 2% Oídio). |
-| **CPU vs GPU** | Un experto vs Un batallón | La CPU es inteligente pero trabaja sola (lenta para entrenar). La GPU son miles de trabajadores básicos en paralelo (hace las multiplicaciones matemáticas rapidísimo). |
+| **Dataset** | El álbum de fotos etiquetado | Conjunto de imágenes (`features`) y sus diagnósticos (`labels`) que la red usa para aprender estadísticamente a separar clases. |
+| **Época (Epoch)** | Leer el manual completo una vez | Un ciclo completo donde la red procesa el 100% del dataset. Si `EPOCHS=10`, la red iterará 10 veces sobre los datos para minimizar el error. |
+| **Lote (Batch)** | La prueba corta | Subconjunto de fotos (ej. 32) que se procesan simultáneamente en memoria antes de actualizar los pesos, estabilizando el aprendizaje. |
+| **Tensor** | La foto convertida a matriz matemática | Estructura de datos multidimensional. Una foto se convierte en un Tensor de forma `[Canales, Alto, Ancho]` con valores numéricos de píxeles. |
+| **Pesos (Weights)** | La "experiencia" o intuición | Los parámetros internos (números) que la red multiplica por los datos de entrada. Se ajustan iterativamente durante el entrenamiento. |
+| **Loss (Pérdida)** | El medidor de equivocaciones | Una métrica matemática (como `CrossEntropyLoss`) que cuantifica qué tan lejos estuvo la predicción de la red respecto a la etiqueta real. |
+| **Learning Rate** | El tamaño del paso al caminar | El multiplicador (ej. `0.001`) que define la magnitud con la que el Optimizador actualiza los pesos. Muy alto causa inestabilidad; muy bajo, estancamiento. |
+| **Inferencia** | Trabajar solo en el campo | Fase de producción (`model.eval()`) donde se hace un *forward pass* sin calcular gradientes (sin aprender) solo para predecir fotos nuevas. |
+| **Overfitting** | Memorizar sin entender (Sobreajuste) | Cuando la red modela el "ruido" de los datos de entrenamiento perdiendo capacidad de generalización frente a imágenes que nunca ha visto. |
+| **Filtro Convolucional** | La lupa especializada | Una matriz pequeña (Kernel 3x3) que se desliza por la imagen calculando productos punto para extraer características (features) como bordes o texturas. |
+| **Función de Activación** | El umbral de decisión | Una operación matemática no-lineal (como `ReLU: max(0, x)`) que decide si la señal de una neurona es lo bastante fuerte para pasar a la siguiente capa. |
+| **Optimizador (ej. Adam)** | El GPS (Descenso de gradiente) | El algoritmo que usa las derivadas del error para guiar a los pesos hacia su valor óptimo, utilizando momentum para no quedarse atascado. |
+| **Desbalance de Clases** | El huerto estadísticamente disparejo | Asimetría en el dataset (1000 fotos de Tizón vs 152 Sanas) que sesga las predicciones del modelo hacia la clase mayoritaria. |
+| **Pooling (MaxPool)** | El resumen espacial | Operación de reducción de dimensionalidad (downsampling) que extrae el valor máximo de una región (ej. 2x2), ahorrando RAM y dando invarianza a la posición. |
+| **Flatten (Aplanado)** | Desarmar el rompecabezas en fila | Capa que transforma el tensor tridimensional de los mapas de características en un vector unidimensional (1D) para poder inyectarlo a la red densa final. |
+| **Backpropagation** | Repartir la culpa matemática | Algoritmo que aplica la "regla de la cadena" desde la salida hacia la entrada para calcular el gradiente (derivada) de cada peso respecto al error (Loss). |
+| **Capa Densa (MLP)** | El comité de decisiones | Capas "Fully Connected" donde cada neurona recibe conexiones de todas las neuronas anteriores. Realiza la combinación lineal final para clasificar. |
+| **Normalización** | Nivelar el terreno estadístico | Re-escalar los valores de los píxeles (usualmente a media 0 y varianza 1) para acelerar la convergencia matemática del gradiente. |
+| **Softmax** | El porcentaje de probabilidad | Función que transforma los valores crudos de salida (logits) en una distribución de probabilidades exponencial que suma exactamente 1.0 (100%). |
+| **CPU vs GPU** | Un trabajador vs Procesamiento paralelo | La CPU procesa tareas secuenciales complejas. La GPU tiene miles de núcleos paralelos masivos, ideales para las multiplicaciones de matrices de los Tensores. |
 
 ---
 
