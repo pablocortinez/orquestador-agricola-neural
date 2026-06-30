@@ -529,15 +529,15 @@ PIL [H, W, 3]  →  Resize  →  PIL [64, 64, 3]
   →  relu2                 →  [32, 32, 32, 32]
   →  pool2(2×2)            →  [32, 32, 16, 16]
   →  flatten               →  [32, 8192]   (32×16×16=8192)
-  →  fc1(8192→64)          →  [32, 64]
-  →  relu3                 →  [32, 64]
-  →  fc2(64→3)             →  [32, 3]      ← logits
+  →  fc1(8192→256)         →  [32, 256]
+  →  relu3                 →  [32, 256]
+  →  fc2(256→14)           →  [32, 14]      ← logits
   →  CrossEntropyLoss      →  []           ← escalar (loss)
 ```
 
 ### 📝 Auto-Evaluación (Nivel 4.3)
 <details><summary>¿Qué pasaría si cambiamos el orden de la lista estática <code>CLASS_NAMES</code> en producción por un tema estético?</summary>
-Provocaría un cruce de etiquetas gravísimo. La red neuronal no predice texto, predice números (índices 0, 1 o 2). Durante el entrenamiento, la función `ImageFolder` de PyTorch asignó esos índices en estricto orden alfabético a las carpetas (Oidio es 0). Si en producción ponemos a 'Planta_Sana' de primero en la lista, tomará el índice 0. Cuando ingrese una foto de Oídio, la red predecirá perfectamente el '0', pero nuestro código lo traducirá equivocadamente a 'Planta_Sana'. Por ende, ese orden jamás debe alterarse por estética.
+Provocaría un cruce de etiquetas gravísimo. La red neuronal no predice texto, predice números (índices 0 a 13). Durante el entrenamiento, la función `ImageFolder` de PyTorch asignó esos índices en estricto orden alfabético a las carpetas (Oidio es 0). Si en producción ponemos a 'Planta_Sana' de primero en la lista, tomará el índice 0. Cuando ingrese una foto de Oídio, la red predecirá perfectamente el '0', pero nuestro código lo traducirá equivocadamente a 'Planta_Sana'. Por ende, ese orden jamás debe alterarse por estética.
 </details>
 
 <details><summary>¿Qué pasaría si <code>IMG_SIZE=128</code> en entrenamiento y <code>64</code> en inferencia?</summary>
@@ -598,7 +598,7 @@ En ese escenario, Gemini **no** recomendará ningún tratamiento. Le responderá
 |---|---|---|---|
 | `IMG_SIZE` | `64` | `entrenar_cnn.py:57` | Compromiso CPU/resolución. 224 requiere GPU. |
 | `BATCH_SIZE` | `32` | `entrenar_cnn.py:64` | Estándar empírico. Menor=ruidoso, mayor=más RAM. |
-| `EPOCHS` | `10` | `entrenar_cnn.py:72` | ~630 actualizaciones. Conservador anti-overfitting. |
+| `EPOCHS` | `15` | `entrenar_cnn.py:72` | ~5.400 actualizaciones. Conservador anti-overfitting. |
 | `lr` | `0.001` | `entrenar_cnn.py:307` | Default Adam (Kingma & Ba, 2014). |
 | `Normalize μ,σ` | `(0.5,0.5,0.5)` | ambos archivos | Reescala [0,1]→[-1,1]. Genérico. |
 
@@ -611,8 +611,8 @@ En ese escenario, Gemini **no** recomendará ningún tratamiento. Le responderá
 | `kernel_size` | `3×3` | `:185,206` | Mínimo efectivo. Menos params que 5×5. |
 | `padding` | `1` | `:185,206` | Same padding: mantiene dims espaciales. |
 | `MaxPool stride` | `2` | `:199,209` | Reduce 50%/bloque. Invarianza traslacional. |
-| `fc1` | `8192→64` | `:221` | Cuello de botella. 99% de todos los params. |
-| `fc2` | `64→3` | `:229` | 3 logits = 3 clases. Sin activación. |
+| `fc1` | `8192→256` | `:221` | Cuello de botella. Casi 100% de los params. |
+| `fc2` | `256→14` | `:229` | 14 logits = 14 clases. Sin activación. |
 
 ### Parámetros Totales
 
@@ -620,9 +620,9 @@ En ese escenario, Gemini **no** recomendará ningún tratamiento. Le responderá
 |---|---|---|
 | conv1 | `(3×16×3×3)+16` | 448 |
 | conv2 | `(16×32×3×3)+32` | 4,640 |
-| fc1 | `(8192×64)+64` | 524,352 |
-| fc2 | `(64×3)+3` | 195 |
-| **TOTAL** | | **529,635** |
+| fc1 | `(8192×256)+256` | 2,097,408 |
+| fc2 | `(256×14)+14` | 3,598 |
+| **TOTAL** | | **~2,106,094** |
 
 ### Trazabilidad Inter-Archivo
 
@@ -658,7 +658,7 @@ graph LR
 | Augmentation | Sin variaciones | `RandomHorizontalFlip`, `RandomRotation` |
 | Desbalance | 152 vs 1000 imgs | `WeightedRandomSampler` |
 | Validación | Sin split train/val | `random_split` 80/20 |
-| Arquitectura | fc1 = 524K params | Global Average Pooling |
+| Arquitectura | fc1 = 2.1M params | Global Average Pooling |
 
 ---
 
@@ -667,7 +667,7 @@ graph LR
 Un MLP aplanaría la imagen inmediatamente, destruyendo la relación espacial (el píxel de arriba no tendría relación con el de abajo). La CNN usa filtros 2D que deslizan por la foto, preservando la geometría y buscando patrones locales como manchas y bordes.
 </details>
 
-<details><summary>¿Por qué se eligieron los hiperparámetros actuales (IMG_SIZE=64, BATCH_SIZE=32, EPOCHS=10) y qué pasaría si los alteramos drásticamente?</summary>
+<details><summary>¿Por qué se eligieron los hiperparámetros actuales (IMG_SIZE=64, BATCH_SIZE=32, EPOCHS=15) y qué pasaría si los alteramos drásticamente?</summary>
 Fueron elegidos por ser un compromiso entre precisión y costo computacional (entrenable en CPU de un laptop). Si usamos IMG_SIZE=224, colapsaría la memoria sin GPU. Si usamos EPOCHS=100 en un dataset tan chico, la red se memorizaría las fotos (Overfitting).
 </details>
 
@@ -676,7 +676,7 @@ El riesgo principal es el **sesgo estadístico**. La red podría adoptar un comp
 </details>
 
 <details><summary>Más allá del código actual, ¿qué mejora arquitectónica le harías a la CNN para reducir sus parámetros (peso en MB)?</summary>
-Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera capa densa tiene más de 500,000 parámetros. Al hacer pooling global, promediamos cada canal reduciendo los parámetros drásticamente sin perder precisión, haciendo el modelo mucho más ligero.
+Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera capa densa tiene más de 2 millones de parámetros. Al hacer pooling global, promediamos cada canal reduciendo los parámetros drásticamente sin perder precisión, haciendo el modelo mucho más ligero.
 </details>
 
 > [!TIP]
@@ -688,7 +688,7 @@ Cambiaría el "Flatten" por "Global Average Pooling". Actualmente la primera cap
 
 **Estas preguntas evalúan tu toma de decisiones como Ingeniero, más que tu código.**
 
-<details><summary>Veo que usó todo su dataset de ~2000 fotos para entrenar. Las buenas prácticas dictan que uno debe dividir el dataset en Entrenamiento y Validación (Train/Val Split). ¿Por qué no lo hizo y qué riesgo conlleva?</summary>
+<details><summary>Veo que usó todo su dataset de ~11.500 fotos para entrenar. Las buenas prácticas dictan que uno debe dividir el dataset en Entrenamiento y Validación (Train/Val Split). ¿Por qué no lo hizo y qué riesgo conlleva?</summary>
 "Profesor, por limitaciones de tiempo y volumen de datos (la clase Sana solo tiene 152 fotos) usé todo para entrenamiento. El riesgo es que no puedo saber si el modelo sufre de *Overfitting* (memorización) hasta que lo pruebo en producción con fotos nuevas. Si tuviera más tiempo y volumen, implementaría un `random_split` de 80/20 en PyTorch."
 </details>
 
