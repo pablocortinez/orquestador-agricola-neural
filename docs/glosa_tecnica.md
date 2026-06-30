@@ -30,7 +30,7 @@ Antes de ver cómo funciona el código, necesitas entender 20 palabras clave de 
 | Concepto Técnico | Analogía Agrícola | Definición Simple (con toque técnico) |
 |---|---|---|
 | **Dataset** | El álbum de fotos etiquetado | Conjunto de imágenes (`features`) y sus diagnósticos (`labels`) que la red usa para aprender estadísticamente a separar clases. |
-| **Época (Epoch)** *(Hiperparámetro)* | Leer el manual completo una vez | Un ciclo completo donde la red procesa el 100% del dataset. Si `EPOCHS=10`, la red iterará 10 veces sobre los datos para minimizar el error. |
+| **Época (Epoch)** *(Hiperparámetro)* | Leer el manual completo una vez | Un ciclo completo donde la red procesa el 100% del dataset. Si `EPOCHS=15`, la red iterará 15 veces sobre los datos para minimizar el error. |
 | **Lote (Batch)** *(Hiperparámetro)* | La prueba corta | Subconjunto de fotos (ej. 32) que se procesan simultáneamente en memoria antes de actualizar los pesos, estabilizando el aprendizaje. |
 | **Tamaño de Imagen (IMG_SIZE)** *(Hiperparámetro)* | La resolución de la lupa | Resolución a la que se redimensionan todas las fotos (ej. 64x64). A mayor tamaño, más detalle, pero mayor consumo de RAM. |
 | **Tensor** | La foto convertida a matriz matemática | Estructura de datos multidimensional. Una foto se convierte en un Tensor de forma `[Canales, Alto, Ancho]` con valores numéricos de píxeles. |
@@ -50,7 +50,7 @@ Antes de ver cómo funciona el código, necesitas entender 20 palabras clave de 
 | **Optimizador (ej. Adam)** *(Hiperparámetro)* | El GPS (Descenso de gradiente) | El algoritmo que usa las derivadas del error para guiar a los pesos hacia su valor óptimo, utilizando momentum para no quedarse atascado. |
 | **Momentum** *(Hiperparámetro)* | El vuelo de bajada | Parámetro interno del optimizador Adam (β1=0.9, β2=0.999) que recuerda la inercia de los gradientes anteriores para acelerar el aprendizaje y no estancarse en hoyos locales. |
 | **Umbral de Confianza (Threshold)** *(Hiperparámetro de Negocio)* | El filtro de seguridad | Nivel mínimo de probabilidad requerida (ej. 0.65) para aceptar una predicción como válida antes de enviar una alerta, mitigando riesgos operativos. |
-| **Desbalance de Clases** | El huerto estadísticamente disparejo | Asimetría en el dataset (1000 fotos de Tizón vs 152 Sanas) que sesga las predicciones del modelo hacia la clase mayoritaria. |
+| **Desbalance de Clases** | El huerto estadísticamente disparejo | Asimetría en el dataset (ej. 1000 fotos comunes vs 373 de Mosaico_Tomate) que sesga las predicciones del modelo hacia la clase mayoritaria. |
 | **Pooling (MaxPool)** | El resumen espacial | Operación de reducción de dimensionalidad (downsampling) que extrae el valor máximo de una región (ej. 2x2), ahorrando RAM y dando invarianza a la posición. |
 | **Flatten (Aplanado)** | Desarmar el rompecabezas en fila | Capa que transforma el tensor tridimensional de los mapas de características en un vector unidimensional (1D) para poder inyectarlo a la red densa final. |
 | **Backpropagation** | Repartir la culpa matemática | Algoritmo que aplica la "regla de la cadena" desde la salida hacia la entrada para calcular el gradiente (derivada) de cada peso respecto al error (Loss). |
@@ -82,19 +82,20 @@ graph TD
     style C fill:#f96,stroke:#333,stroke-width:4px
 ```
 
-### Las tres clases detectadas
+### Las 14 clases detectadas (PlantVillage)
 
-| Clase | Qué es | Síntoma visual |
+| Categoría | Qué es | Síntomas visuales comunes |
 |---|---|---|
-| `Planta_Sana` | Sin enfermedad | Verde uniforme |
-| `Tizon_Tardio_Papa` | Hongo que destruye papas | Manchas marrones oscuras |
-| `Oidio_Vid` | Hongo que afecta uvas | Polvo blanco en la hoja |
+| `Planta_Sana` | Sin enfermedad | Verde uniforme, sin lesiones |
+| `Tomate` | 9 patologías (Tizón, Mosaico, Septoria...) | Manchas, amarillamiento, enrollamiento foliar |
+| `Papa` | 2 patologías (Tizón temprano y tardío) | Manchas marrones oscuras, anillos concéntricos |
+| `Pimiento / Vid` | 2 patologías (Mancha bacteriana, Oidio) | Polvo blanco, manchas acuosas |
 
 ### Los dos archivos de código
 
 | Archivo | Qué hace en una frase |
 |---|---|
-| `entrenar_cnn.py` | Enseña a la red a distinguir estas 3 clases usando miles de fotos |
+| `entrenar_cnn.py` | Enseña a la red a distinguir estas 14 clases usando ~11.500 fotos |
 | `api_vision.py` | Expone la red entrenada como servicio web que recibe fotos y responde diagnósticos |
 
 ---
@@ -133,7 +134,7 @@ El proceso tiene dos fases separadas:
 
 ### El dataset: los datos de entrenamiento
 
-El modelo aprendió usando el **dataset PlantVillage**: una colección de ~2000 fotos de hojas reales, ya organizadas en carpetas por enfermedad. Cada carpeta es una clase:
+El modelo aprendió usando el **dataset PlantVillage**: una colección de ~11.500 fotos de hojas reales, ya organizadas en carpetas por enfermedad. Cada carpeta es una clase:
 
 ```
 data/
@@ -199,8 +200,8 @@ graph TD
     A[FOTO RGB <br> 64x64 píxeles] -->|3 Canales| B[BLOQUE CONV 1 <br> 16 Filtros]
     B -->|16 mapas de 32x32| C[BLOQUE CONV 2 <br> 32 Filtros]
     C -->|32 mapas de 16x16| D[APLANADO <br> Flatten]
-    D -->|Fila de 8192 números| E[RED DENSA <br> 64 Neuronas]
-    E -->|3 Scores finales| F((Veredicto))
+    D -->|Fila de 8192 números| E[RED DENSA <br> 256 Neuronas]
+    E -->|14 Scores finales| F((Veredicto))
     
     style A fill:#cfc,stroke:#333
     style D fill:#fcf,stroke:#333
@@ -209,7 +210,7 @@ graph TD
 
 ### ¿Qué guarda `modelo_vision.pth`?
 
-Guarda todos los **pesos** (valores numéricos) que los filtros y el clasificador aprendieron durante el entrenamiento. Son los ~529,635 números que definen exactamente qué busca cada filtro. Sin este archivo, la red existe como estructura vacía pero no sabe hacer nada.
+Guarda todos los **pesos** (valores numéricos) que los filtros y el clasificador aprendieron durante el entrenamiento. Son los ~2,106,094 números que definen exactamente qué busca cada filtro. Sin este archivo, la red existe como estructura vacía pero no sabe hacer nada.
 
 ---
 
@@ -253,9 +254,9 @@ Cada filtro convolucional y cada neurona densa tiene **pesos**: valores numéric
 Conteo por capa:
 - `conv1`: 448 pesos  
 - `conv2`: 4,640 pesos  
-- `fc1`: 524,352 pesos ← aquí está el 99% del modelo  
-- `fc2`: 195 pesos  
-- **Total: 529,635 pesos**
+- `fc1`: 2,097,408 pesos ← aquí está casi el 100% del modelo  
+- `fc2`: 3,598 pesos  
+- **Total: ~2,106,094 pesos**
 
 ### El flujo de datos como transformación
 
@@ -271,8 +272,8 @@ Después de pool1     → Tensor [32, 16, 32, 32] ← se achicó espacialmente
 Después de conv2     → Tensor [32, 32, 32, 32] ← 32 feature maps
 Después de pool2     → Tensor [32, 32, 16, 16] ← se achicó de nuevo
 Después de Flatten   → Tensor [32, 8192]        ← todo aplanado
-Después de fc1       → Tensor [32, 64]
-Después de fc2       → Tensor [32, 3]           ← 3 scores por imagen
+Después de fc1       → Tensor [32, 256]
+Después de fc2       → Tensor [32, 14]           ← 14 scores por imagen
 ```
 
 ### ¿Por qué se usan mini-batches?
@@ -295,7 +296,7 @@ Porque es mucho más rápido al usar operaciones matemáticas matriciales en par
 </details>
 
 <details><summary>¿Qué capa tiene el 99% de los parámetros y por qué?</summary>
-La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta los 8192 valores del flattened tensor con 64 neuronas, requiere <code>8192 × 64 = 524,288</code> pesos individuales (conexiones).
+La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta los 8192 valores del flattened tensor con 256 neuronas, requiere <code>8192 × 256 = 2,097,152</code> pesos individuales (conexiones).
 </details>
 
 ---
@@ -310,23 +311,23 @@ La capa <code>fc1</code> (la primera capa lineal post-aplanado). Como conecta lo
 2. **Se compara con la respuesta correcta** → se calcula el error llamado **loss**
 3. **Se analiza dónde se equivocó** → **backpropagation** encuentra qué pesos fallaron
 4. **Se corrigen los pesos** → el **optimizador** los ajusta un poco
-5. **Repetir 630 veces** → la red mejora progresivamente
+5. **Repetir ~5.400 veces** → la red mejora progresivamente
 
 ### Épocas y batches
 
-- **Época:** una pasada completa por las ~2000 fotos del dataset
+- **Época:** una pasada completa por las ~11.500 fotos del dataset
 - **Batch:** grupo de 32 fotos procesadas juntas antes de actualizar los pesos
-- Cálculo: 2000 fotos ÷ 32 por batch = ~63 batches por época × 10 épocas = **~630 actualizaciones totales**
+- Cálculo: 11.500 fotos ÷ 32 por batch = ~360 batches por época × 15 épocas = **~5.400 actualizaciones totales**
 
 ```
 ÉPOCA 1:
   Batch 1 (32 fotos) → loss=2.1 → ajustar pesos
   Batch 2 (32 fotos) → loss=1.9 → ajustar pesos
-  ...63 batches...
+  ...360 batches...
   Loss promedio: 1.8
 
 ÉPOCA 5:  Loss promedio: 0.8
-ÉPOCA 10: Loss promedio: 0.3  ← la red ya aprendió
+ÉPOCA 15: Loss promedio: 0.3  ← la red ya aprendió
 ```
 
 ### La función de pérdida (loss)
@@ -351,8 +352,8 @@ En producción (`api_vision.py`) **no hay entrenamiento**. La red solo hace el p
 1. Limpiar gradientes (zero_grad), 2. Calcular predicción (forward), 3. Calcular error (loss), 4. Calcular gradientes (backward), 5. Actualizar pesos (step).
 </details>
 
-<details><summary>¿Cuántas actualizaciones totales ocurren con EPOCHS=10 y BATCH_SIZE=32?</summary>
-Con ~2000 fotos divididas en batches de 32, tenemos ~63 batches por época. 63 batches × 10 épocas = ~630 actualizaciones en total.
+<details><summary>¿Cuántas actualizaciones totales ocurren con EPOCHS=15 y BATCH_SIZE=32?</summary>
+Con ~11.500 fotos divididas en batches de 32, tenemos ~360 batches por época. 360 batches × 15 épocas = ~5.400 actualizaciones en total.
 </details>
 
 <details><summary>¿Qué significa en la práctica que el loss baje de 2.1 a 0.3?</summary>
@@ -372,7 +373,7 @@ optimizer.zero_grad()          # 1. Limpiar gradientes del batch anterior
 outputs = model(inputs)        # 2. Forward pass: calcular predicciones
 loss = criterion(outputs, labels)  # 3. Calcular la pérdida (CrossEntropyLoss)
 loss.backward()                # 4. Backpropagation: calcular gradientes
-optimizer.step()               # 5. Actualizar los 529,635 pesos (Adam)
+optimizer.step()               # 5. Actualizar los ~2,106,094 pesos (Adam)
 ```
 
 ### ¿Qué es un gradiente?
@@ -461,7 +462,7 @@ La ventaja es que ReLU transmite la información (el gradiente de error) de form
 |---|---|---|
 | **Learning Rate (lr)** | El mismo para todos los pesos | Ajustado dinámicamente para cada peso individual |
 | **Memoria (Momentum)** | No (en su forma pura) | Sí, recuerda gradientes pasados para no estancarse |
-| **Velocidad de convergencia**| Lenta, requiere miles de épocas | Muy rápida, ideal para entrenamientos cortos (como nuestras 10 épocas) |
+| **Velocidad de convergencia**| Lenta, requiere miles de épocas | Muy rápida, ideal para entrenamientos cortos (como nuestras 15 épocas) |
 
 SGD: `w = w - lr × ∂L/∂w` (mismo lr para todos)
 
@@ -469,11 +470,11 @@ Adam: `w = w - lr × m̂ / (√v̂ + ε)` donde:
 - `m̂ = β₁·m + (1-β₁)·g` → promedio móvil del gradiente (momentum)
 - `v̂ = β₂·v + (1-β₂)·g²` → promedio móvil del gradiente² (escala adaptativa)
 
-**Resultado:** con solo 630 actualizaciones disponibles, Adam converge donde SGD todavía está calentando.
+**Resultado:** con solo ~5.400 actualizaciones disponibles, Adam converge donde SGD todavía está calentando.
 
 ### 📝 Auto-Evaluación (Nivel 4.1)
-<details><summary>Sabiendo que su red tiene muy pocas actualizaciones (10 épocas), ¿por qué eligió Adam en lugar del clásico algoritmo SGD?</summary>
-Elegí Adam porque tiene dos propiedades matemáticas clave para un entrenamiento corto: 1) **Adaptive Learning Rate:** SGD aplica un tamaño de paso ciego y fijo para todos los parámetros de la red. Adam ajusta dinámicamente el paso para cada peso de forma individual. 2) **Momentum:** Adam recuerda el historial de gradientes anteriores para darle inercia a la red y no quedarse atascada. Gracias a esto, Adam logra la convergencia matemática rapidísimo (en solo 10 épocas), mientras que SGD necesitaría miles de épocas de gasto computacional para lograr la misma precisión.
+<details><summary>Sabiendo que su red tiene muy pocas actualizaciones (15 épocas), ¿por qué eligió Adam en lugar del clásico algoritmo SGD?</summary>
+Elegí Adam porque tiene dos propiedades matemáticas clave para un entrenamiento corto: 1) **Adaptive Learning Rate:** SGD aplica un tamaño de paso ciego y fijo para todos los parámetros de la red. Adam ajusta dinámicamente el paso para cada peso de forma individual. 2) **Momentum:** Adam recuerda el historial de gradientes anteriores para darle inercia a la red y no quedarse atascada. Gracias a esto, Adam logra la convergencia matemática rapidísimo (en solo 15 épocas), mientras que SGD necesitaría miles de épocas de gasto computacional para lograr la misma precisión.
 </details>
 
 ---
